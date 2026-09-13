@@ -30,3 +30,11 @@ jobs:
         run: npx playwright install --with-deps chromium
       - if: matrix.directory == 'extension'
         run: npm run test:browser
+      - if: matrix.directory == 'extension'
+        run: npm --prefix ../app ci
+      - if: matrix.directory == 'extension'
+        run: |
+          npm --prefix ../app run dev > /tmp/jobradar-discovery-vite.log 2>&1 &
+          discovery_pid=$!
+          trap 'kill "$discovery_pid"' EXIT
+          npm run test:discovery

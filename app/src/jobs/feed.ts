@@ -9,6 +9,7 @@ export interface FeedJob {
   country: string;
   url: string;
   source: string;
+  discovery?: { provider: "JSearch"; publisher: string; originalUrl: string; direct: boolean };
   publishedAt: string | null;
   firstSeenAt: string;
   ghost: { score: number; band: "low" | "medium" | "high" | "critical"; reasons: string[] };
@@ -293,7 +294,7 @@ export function applyFilters(jobs: FeedJob[], f: JobFilters): FeedJob[] {
     return true;
   });
   const posted = (j: FeedJob) => j.publishedAt ?? j.firstSeenAt;
-  if (f.sort === "ghost") out = out.sort((a, b) => a.ghost.score - b.ghost.score || posted(b).localeCompare(posted(a)));
+  if (f.sort === "ghost") out = out.sort((a, b) => (a.discovery ? 101 : a.ghost.score) - (b.discovery ? 101 : b.ghost.score) || posted(b).localeCompare(posted(a)));
   if (f.sort === "newest") out = out.sort((a, b) => posted(b).localeCompare(posted(a)));
   if (f.sort === "company") out = out.sort((a, b) => a.company.localeCompare(b.company) || a.title.localeCompare(b.title));
   return out;

@@ -2,11 +2,19 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import { JSearchService, readJSearchKey, saveJSearchKey } from "../jobradar/src/jsearch-service.js";
+import { jsearchHandler } from "../jobradar/src/jsearch-http.js";
 
 export default defineConfig({
+  server: { host: "127.0.0.1", port: 5174, strictPort: true, fs: { deny: [".env", ".env.*", "**/data/jsearch/**", "*.{crt,pem}", "**/.git/**"] } },
   plugins: [react(), {
     name: "local-job-feed",
     configureServer(server) {
+      const discovery = new JSearchService({
+        directory: fileURLToPath(new URL("../jobradar/data/jsearch/", import.meta.url)),
+        getKey: () => readJSearchKey(fileURLToPath(new URL("../jobradar/.env.local", import.meta.url))),
+      });
+      server.middlewares.use("/__discovery", jsearchHandler(discovery, key => saveJSearchKey(fileURLToPath(new URL("../jobradar/.env.local", import.meta.url)), key)));
       server.middlewares.use("/__feed", async (req, res) => {
         const file = req.url?.split("?")[0]?.slice(1);
         if (!file || !["index.json", "us.json", "in.json"].includes(file)) { res.statusCode = 404; res.end(); return; }

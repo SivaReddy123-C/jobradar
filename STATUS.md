@@ -2,6 +2,8 @@
 
 The local branch `feat/role-first-usa-india` now includes an expanded USA/India feed, candidate profiles and the first Ashby application runner. It has not been pushed or deployed. No real applications were sent during this build.
 
+JSearch follow-up: the local preview now includes private key entry and one-role, USA/India discovery with canonical-URL deduplication, explicit source attribution, 24-hour caching and durable request limits. The connector and six browser UI scenarios are fixture-verified. A live API key is not configured yet, so no live JSearch coverage gain is claimed. See [jobradar/JSEARCH.md](jobradar/JSEARCH.md).
+
 - Users explicitly choose roles and USA, India, or both. The 51-role catalog across 17 fields also accepts custom titles. Matching remains deterministic; empty results do not broaden the search.
 - Five verified boards were added: Accor Hotels, Westgate Resorts, KIPP Public Schools, School in the Square and DaVita. Structured SmartRecruiters country codes now survive normalization.
 - The composite September 13 snapshot contains **28,563 supported-market records** (28,556 distinct source job keys): 24,260 USA and 4,303 India. This is **2,088 more records** than the preceding local snapshot. Seven listings appear in both market shards.
@@ -12,7 +14,7 @@ The local branch `feat/role-first-usa-india` now includes an expanded USA/India 
 - **JobRadar Assist 0.3** implements supported Ashby fields, résumé upload, value checks, durable progress, duplicate prevention and explicit attention/uncertain outcomes. It makes no AI calls. A browser restart never blindly retries an interrupted submit.
 - The extension has been verified with synthetic, network-intercepted fixtures. A public Ashby form was inspected read-only. A small authorized live pilot is still required; universal Ashby coverage and production readiness are not claimed. Installation and limits are in [extension/README.md](extension/README.md).
 
-Validation: **147 unit tests** (41 app, 94 collector, 12 extension), TypeScript checks, app/extension builds, and **13 installed-extension browser scenarios**. App checks cover profile/resume persistence, separate market answers, queue creation, missing-profile gates, desktop/mobile layouts and a clean browser error log. No employer received fixture data.
+Validation: **161 unit tests** (42 app, 107 collector, 12 extension), TypeScript checks, app/extension builds, **13 installed-extension browser scenarios**, and **6 discovery UI scenarios**. JSearch follow-up verification also confirms local credential/cache files are blocked by the development server and cross-origin discovery requests are rejected. App checks cover profile/resume persistence, separate market answers, queue creation, missing-profile gates, desktop/mobile layouts and a clean browser error log. No employer received fixture data.
 
 Next release work: an authorized live pilot, the planned 200–300-posting labeled matching benchmark, additional nontechnical coverage where either market is sparse, and reducing the USA feed shard (14.6 MiB), which is too large for the existing browser local-storage cache. The next adapter should follow pilot evidence.
 

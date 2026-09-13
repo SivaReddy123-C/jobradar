@@ -4,6 +4,8 @@
 
 See [STATUS.md](STATUS.md) for coverage, validation and remaining work, and [extension/README.md](extension/README.md) to install JobRadar Assist 0.3. Shared deterministic rules power matching and application answers; these flows require no LLM subscription or per-application AI calls.
 
+The local preview also has **My jobs → Search more job sites**, a bounded JSearch discovery trial with private key setup, USA/India matching, deduplication and a 24-hour cache. See [jobradar/JSEARCH.md](jobradar/JSEARCH.md). A real key and measured provider trial are still required; these results are not published by the static feed.
+
 ### Local development
 
 From `jobradar/`, run `npm ci`, `npm run fetch`, then `npm run feed` to refresh public listings. From `app/`, run `npm ci` and `npm run dev`. The development server serves the local feed through `/__feed` at `http://localhost:5174`. The committed snapshot includes its collection date and unavailable-board warning.

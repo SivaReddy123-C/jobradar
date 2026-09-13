@@ -527,6 +527,11 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .personalized-jobs .ghost-details { margin-top: 6px; }
 .jobs-empty { text-align: center; padding: 46px 24px; }
 .jobs-empty h2 { font-size: 20px; }
+.discovery-panel { padding: 22px; border-color: #c9c3f6; }
+.discovery-panel h2 { margin: 5px 0; font-size: 20px; }
+.discovery-panel p { font-size: 13px; line-height: 1.6; }
+.discovery-controls { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-top: 15px; }
+.discovery-controls .field { flex: 1; min-width: 180px; }
 .jobs-empty p { color: var(--muted); max-width: 520px; margin: 12px auto 22px; font-size: 14px; line-height: 1.7; }
 .empty-symbol { color: var(--accent); font-size: 36px; }
 @media (max-width: 850px) { .setup-layout { grid-template-columns: 1fr; } .setup-summary { order: 2; } }

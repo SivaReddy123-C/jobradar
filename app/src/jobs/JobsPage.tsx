@@ -8,6 +8,8 @@ import { applyFilters, defaultFilters, loadFeed, readCache, type Feed, type Feed
 import { SponsorBadge } from "./SponsorBadge.js";
 import { SearchSetup } from "./SearchSetup.js";
 import { ashbyUrl, queueId, type QueueEntry, type QueueJob } from "../../../shared/applications.js";
+import { additionalJobs, type DiscoveryJob } from "../../../shared/discovery.js";
+import { DiscoveryPanel } from "./DiscoveryPanel.js";
 
 interface Props {
   applications: Application[]; onChange: (apps: Application[]) => void;
@@ -33,6 +35,9 @@ function PersonalizedFeed({ applications, onChange, resume, answers, preferences
   const [limit, setLimit] = useState(PAGE);
   const [copiedKey, setCopiedKey] = useState("");
   const [copyError, setCopyError] = useState("");
+  const [discovered, setDiscovered] = useState<DiscoveryJob[]>([]);
+  const [discoveryOnly, setDiscoveryOnly] = useState(false);
+  const extras = useMemo(() => additionalJobs<FeedJob>(feed?.jobs ?? [], discovered), [feed, discovered]);
   useEffect(() => {
     let active = true;
     setLoading(true); setError("");
@@ -41,15 +46,15 @@ function PersonalizedFeed({ applications, onChange, resume, answers, preferences
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [preferences.markets, refreshCount]);
-  const classified = useMemo(() => feed?.jobs.map((job) => ({ ...job,
+  const classified = useMemo(() => [...(feed?.jobs ?? []), ...extras].map((job) => ({ ...job,
     roleClassification: job.roleClassification?.version === ROLE_VERSION ? job.roleClassification : { version: ROLE_VERSION, ids: classifyRoles(job.title) },
-  })) ?? [], [feed]);
+  })), [feed, extras]);
   const matches = useMemo(() => classified.flatMap((job) => {
     const match = matchJob(job, preferences);
     return match && /^https?:\/\//i.test(job.url) ? [{ job, match }] : [];
   }), [classified, preferences]);
   const matchByKey = useMemo(() => new Map(matches.map((m) => [m.job.key, m.match])), [matches]);
-  const visible = useMemo(() => applyFilters(matches.map((m) => m.job), filters), [matches, filters]);
+  const visible = useMemo(() => applyFilters(matches.map((m) => m.job).filter(j => !discoveryOnly || extras.length === 0 || j.discovery), filters), [matches, filters, discoveryOnly, extras.length]);
   const appliedUrls = useMemo(() => new Set(applications.map((a) => a.url).filter(Boolean)), [applications]);
   function updateFilters(next: JobFilters) { setFilters(next); setLimit(PAGE); }
   function logApplied(job: FeedJob) {
@@ -71,6 +76,8 @@ function PersonalizedFeed({ applications, onChange, resume, answers, preferences
       <div className="search-locations">{preferences.markets.map((m) => MARKETS[m]).join(" + ")}
         {preferences.location && ` · ${preferences.location}`}{preferences.workplace !== "any" && ` · ${WORKPLACES[preferences.workplace]}`}{preferences.level !== "any" && ` · ${LEVELS[preferences.level]}`}</div>
     </div>
+    {import.meta.env.DEV && <DiscoveryPanel preferences={preferences} added={extras.length} onResult={value => { setDiscovered(previous => [...previous, ...additionalJobs(previous, value.jobs)]); if (additionalJobs<FeedJob>(feed?.jobs ?? [], value.jobs).length) { setDiscoveryOnly(true); setLimit(PAGE); } }} />}
+    {extras.length > 0 && <label className="check"><input type="checkbox" checked={discoveryOnly} onChange={e => { setDiscoveryOnly(e.target.checked); setLimit(PAGE); }} />Show only additional jobs ({extras.length})</label>}
     {feed && snapshotAge >= 2 && <div className="freshness-notice" role="status"><strong>This is an older job snapshot.</strong> Collected {feed.generatedAt.slice(0, 10)} ({snapshotAge} days ago). Check the employer page for current availability.</div>}
     {feed?.warnings?.map((warning) => <p className="jobs-error" key={warning} role="status">{warning}</p>)}
     <div className="jobs-toolbar">
@@ -96,7 +103,8 @@ function PersonalizedFeed({ applications, onChange, resume, answers, preferences
           {job.sponsorship === "no" && <span className="tag tag-nosponsor">No sponsorship stated</span>}
           {job.country === "us" && job.sponsor && <SponsorBadge job={job} />}
         </div>
-        <details className="ghost-details"><summary>Posting signals · {job.ghost.band === "low" ? "low risk" : `${job.ghost.band} risk`}</summary>
+        {job.discovery && <p className="job-meta">Found via {job.discovery.provider} · {job.discovery.publisher} · Availability not independently verified</p>}
+        <details className="ghost-details"><summary>Posting signals · {job.discovery ? "not assessed" : job.ghost.band === "low" ? "low risk" : `${job.ghost.band} risk`}</summary>
           <p>These signals are estimates, not confirmation of active hiring.</p><ul>{job.ghost.reasons.map((reason, i) => <li key={i}>{reason}</li>)}</ul>
           <p>Source: {job.source}. Last seen: {(job.lastSeenAt ?? feed?.generatedAt ?? "").slice(0, 10)}.</p>
         </details>

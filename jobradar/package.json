@@ -8,6 +8,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "jsearch": "tsx src/jsearch-cli.ts",
     "probe": "tsx src/cli.ts probe",
     "fetch": "tsx src/cli.ts fetch",
     "report": "tsx src/cli.ts report",
