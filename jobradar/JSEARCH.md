@@ -1,4 +1,6 @@
-# JSearch discovery trial
+# JSearch discovery
+
+The default app now uses authenticated hosted discovery. Deployment and activation status, account setup and shared budgets are documented in [supabase/README.md](../supabase/README.md). The following describes the optional local trial: enable it with `VITE_LOCAL_DISCOVERY=true` in the process environment before starting Vite. Its counters are independent of the hosted budget.
 
 This local integration expands discovery beyond the curated employer boards. It queries one selected role in the user's selected USA/India markets, applies JobRadar's existing matching rules, and deduplicates against the employer feed by canonical application URL. It does not alter the published feed or send applications.
 
@@ -22,7 +24,7 @@ Additional matching listings are shown with a **Show only additional jobs** chec
 - Results and counters live under ignored `jobradar/data/jsearch/`. They are denied by the development server and are not added to the committed feed. Opening My jobs, reloading or opening a new tab automatically restores valid cached pages for the selected roles and countries. Restoring never reads the API key, calls the provider or changes the usage counter. Missing/expired pages remain absent until the user explicitly searches. Matching and the 30-day posting window are reapplied.
 - A process lock prevents concurrent collectors from spending twice. After a crash, verify no collector is running before removing `data/jsearch/request.lock`. Preserve `usage.json` to retain the local budget record.
 
-The UI and API are enabled only by the local Vite development server, bound to loopback on port 5174. The API requires matching Host/Origin and POST. A static production build has no discovery panel, provider credential or discovery endpoint. Account-backed hosting and production credentials are separate work.
+The optional local API is bound to loopback on port 5174 and requires matching Host/Origin and POST. A production build never exposes this local endpoint or the provider credential. The default app connects to the separately hosted search function using a confirmed account. Avoid running the local trial or CLI against the hosted key without reconciling usage.
 
 ## CLI comparison
 

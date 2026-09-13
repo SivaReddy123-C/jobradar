@@ -8,6 +8,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "build:discovery": "node scripts/build-discovery.mjs",
     "jsearch": "tsx src/jsearch-cli.ts",
     "probe": "tsx src/cli.ts probe",
     "fetch": "tsx src/cli.ts fetch",
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "esbuild": "0.25.12",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0"
   },

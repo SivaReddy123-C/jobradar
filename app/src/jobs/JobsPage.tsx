@@ -9,6 +9,7 @@ import { SponsorBadge } from "./SponsorBadge.js";
 import { SearchSetup } from "./SearchSetup.js";
 import { ashbyUrl, queueId, type QueueEntry, type QueueJob } from "../../../shared/applications.js";
 import { additionalJobs, type DiscoveryJob } from "../../../shared/discovery.js";
+import { HostedDiscovery } from "./HostedDiscovery.js";
 import { DiscoveryPanel } from "./DiscoveryPanel.js";
 
 interface Props {
@@ -26,6 +27,7 @@ export function JobsPage(props: Props) {
   return <PersonalizedFeed key={JSON.stringify(props.preferences)} {...props} preferences={props.preferences} onEdit={() => setEditing(true)} />;
 }
 const PAGE = 30;
+const Discovery = import.meta.env.DEV && import.meta.env.VITE_LOCAL_DISCOVERY === "true" ? DiscoveryPanel : HostedDiscovery;
 function PersonalizedFeed({ applications, onChange, resume, answers, preferences, onEdit, queue, onQueue }: Props & { preferences: SearchPreferences; onEdit: () => void }) {
   const [feed, setFeed] = useState<Feed | null>(() => readCache(preferences.markets)?.feed ?? null);
   const [loading, setLoading] = useState(true);
@@ -76,7 +78,7 @@ function PersonalizedFeed({ applications, onChange, resume, answers, preferences
       <div className="search-locations">{preferences.markets.map((m) => MARKETS[m]).join(" + ")}
         {preferences.location && ` · ${preferences.location}`}{preferences.workplace !== "any" && ` · ${WORKPLACES[preferences.workplace]}`}{preferences.level !== "any" && ` · ${LEVELS[preferences.level]}`}</div>
     </div>
-    {import.meta.env.DEV && <DiscoveryPanel preferences={preferences} added={extras.length} onResult={value => { setDiscovered(previous => [...previous, ...additionalJobs(previous, value.jobs)]); if (additionalJobs<FeedJob>(feed?.jobs ?? [], value.jobs).length) { setDiscoveryOnly(true); setLimit(PAGE); } }} />}
+    <Discovery preferences={preferences} added={extras.length} onResult={value => { setDiscovered(previous => [...previous, ...additionalJobs(previous, value.jobs)]); if (additionalJobs<FeedJob>(feed?.jobs ?? [], value.jobs).length) { setDiscoveryOnly(true); setLimit(PAGE); } }} />
     {extras.length > 0 && <label className="check"><input type="checkbox" checked={discoveryOnly} onChange={e => { setDiscoveryOnly(e.target.checked); setLimit(PAGE); }} />Show only additional jobs ({extras.length})</label>}
     {feed && snapshotAge >= 2 && <div className="freshness-notice" role="status"><strong>This is an older job snapshot.</strong> Collected {feed.generatedAt.slice(0, 10)} ({snapshotAge} days ago). Check the employer page for current availability.</div>}
     {feed?.warnings?.map((warning) => <p className="jobs-error" key={warning} role="status">{warning}</p>)}

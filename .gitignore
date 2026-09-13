@@ -12,3 +12,5 @@ jobradar/data/latest.json
 # It was 24.6MB and was committed nightly.
 jobradar/data/feed.json
 extension/.test-profiles/
+supabase/.temp/
+supabase/functions/job-discovery/core.js

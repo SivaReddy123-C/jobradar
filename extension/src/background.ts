@@ -17,7 +17,7 @@ const initialized = (async () => {
 function trustedApp(url?: string): boolean {
   if (!url) return false;
   const u = new URL(url);
-  return u.origin === "http://127.0.0.1:5174" || u.origin === "http://localhost:5174" || u.origin === "https://sivareddy123-c.github.io" && u.pathname.startsWith("/sivareddy/");
+  return u.origin === "http://127.0.0.1:5174" || u.origin === "http://localhost:5174" || u.origin === "https://sivareddy123-c.github.io" && (u.pathname.startsWith("/jobradar/") || u.pathname.startsWith("/sivareddy/"));
 }
 async function update(entry: QueueEntry, patch: Partial<QueueEntry>) {
   Object.assign(entry, patch, { updatedAt: new Date().toISOString() });

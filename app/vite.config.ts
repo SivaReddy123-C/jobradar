@@ -17,11 +17,13 @@ export default defineConfig({
       }
     },
     configureServer(server) {
-      const discovery = new JSearchService({
-        directory: fileURLToPath(new URL("../jobradar/data/jsearch/", import.meta.url)),
-        getKey: () => readJSearchKey(fileURLToPath(new URL("../jobradar/.env.local", import.meta.url))),
-      });
-      server.middlewares.use("/__discovery", jsearchHandler(discovery, key => saveJSearchKey(fileURLToPath(new URL("../jobradar/.env.local", import.meta.url)), key)));
+      if (process.env.VITE_LOCAL_DISCOVERY === "true") {
+        const discovery = new JSearchService({
+          directory: fileURLToPath(new URL("../jobradar/data/jsearch/", import.meta.url)),
+          getKey: () => readJSearchKey(fileURLToPath(new URL("../jobradar/.env.local", import.meta.url))),
+        });
+        server.middlewares.use("/__discovery", jsearchHandler(discovery, key => saveJSearchKey(fileURLToPath(new URL("../jobradar/.env.local", import.meta.url)), key)));
+      }
       server.middlewares.use("/__feed", async (req, res) => {
         const file = req.url?.split("?")[0]?.slice(1);
         if (!file || !["index.json", "us.json", "in.json"].includes(file)) { res.statusCode = 404; res.end(); return; }

@@ -1,16 +1,16 @@
 # JobRadar — choose your role, find your next job
 
-**Current scope: USA and India.** Open the [public JobRadar app](https://sivareddy123-c.github.io/sivareddy/), choose the roles you want, see matching company-board listings, and save the facts and résumé you want employers to receive. The app includes a queue for the first **Ashby auto-apply adapter**, verified on controlled browser fixtures. Install JobRadar Assist to connect the runner; a live pilot is still required.
+**Current scope: USA and India.** Open the [public JobRadar app](https://sivareddy123-c.github.io/jobradar/), choose the roles you want, see matching company-board listings, and save the facts and résumé you want employers to receive. The repository was renamed from `sivareddy` to `jobradar`; the old Pages path no longer serves the app. The app includes a queue for the first **Ashby auto-apply adapter**, verified on controlled browser fixtures. Install JobRadar Assist to connect the runner; a live pilot is still required.
 
 See [STATUS.md](STATUS.md) for coverage, validation and remaining work, and [extension/README.md](extension/README.md) to install JobRadar Assist 0.3. Shared deterministic rules power matching and application answers; these flows require no LLM subscription or per-application AI calls.
 
-The local preview also has **My jobs → Search more job sites**, a bounded JSearch discovery trial with private key setup, USA/India matching, deduplication and a 24-hour cache. The September 13 live trial added 27 matching listings across six searches, including 17 published by LinkedIn, after enforcing a local 30-day posting window. Different publishers can still advertise the same opening. See [jobradar/JSEARCH.md](jobradar/JSEARCH.md) for results and limitations; trial records are not published by the static feed.
+**Hosted discovery is prepared on this branch:** My jobs → Search more job sites uses confirmed-account sign-in and a Supabase Edge Function with shared caching and request limits. The backend is deployed with new searches paused; secret installation and an authenticated live smoke test remain before public activation. See [supabase/README.md](supabase/README.md). The optional local JSearch trial remains available with `VITE_LOCAL_DISCOVERY=true`. Its September 13 trial added 27 matching listings across six searches, including 17 published by LinkedIn, after enforcing a 30-day posting window. Different publishers can still advertise the same opening. See [jobradar/JSEARCH.md](jobradar/JSEARCH.md) for results and limitations.
 
 ### Local development
 
 From `jobradar/`, run `npm ci`, `npm run fetch`, then `npm run feed` to refresh public listings. From `app/`, run `npm ci` and `npm run dev`. The development server serves the local feed through `/__feed` at `http://localhost:5174`. The committed snapshot includes its collection date and unavailable-board warning.
 
-Production builds publish the USA/India feed under `feed/` alongside the app. This keeps the deployed interface and job snapshot together instead of reading a separately cached raw GitHub branch URL. A newer published index invalidates older browser shard data. Pushes to `main` affecting the app, shared code or public feed trigger GitHub Pages deployment. JSearch's key and discovery cache are excluded; its API still runs locally only.
+Production builds publish the USA/India feed under `feed/` alongside the app. This keeps the deployed interface and job snapshot together instead of reading a separately cached raw GitHub branch URL. A newer published index invalidates older browser shard data. Pushes to `main` affecting the app, shared code or public feed trigger GitHub Pages deployment. JSearch's key and discovery cache are excluded; hosted searches use the authenticated service described above.
 
 Run `npm test` and `npm run typecheck` in `app/`, `jobradar/` and `extension/`; build the app and extension with `npm run build` in each. The extension also has an installed-browser fixture suite (see its README). CI includes all three packages.
 
@@ -18,7 +18,7 @@ Run `npm test` and `npm run typecheck` in `app/`, `jobradar/` and `extension/`; 
 
 Complete **Profile**, select a saved PDF/DOCX, then use **Add to queue** on matching Ashby jobs. Connect the extension from **Queue** in the same Chrome/Edge browser. Inspect missing answers, select a bounded run, and authorize submission. The runner records confirmation or uncertainty and prevents automatic duplicate attempts. Other application sites remain available through their original links.
 
-Search preferences and candidate data stay in the browser. JSON export includes profile facts and file references; download résumé files separately. An authorized application run sends the selected facts/document to the employer. Role/location matching is conservative and source coverage varies by profession. An empty result does not mean no employers are hiring. The public site is a static GitHub Pages deployment; background collection schedules remain paused.
+Search preferences and candidate data are saved in the browser. Hosted discovery sends search preferences to the search service; candidate facts and résumés remain local. JSON export includes profile facts and file references; download résumé files separately. An authorized application run sends the selected facts/document to the employer. Role/location matching is conservative and source coverage varies by profession. An empty result does not mean no employers are hiring. The public site is a static GitHub Pages deployment; background collection schedules remain paused.
 
 ---
 

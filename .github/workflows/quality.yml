@@ -1,10 +1,10 @@
 name: Quality checks
 on:
   pull_request:
-    paths: ["app/**", "extension/**", "jobradar/src/**", "jobradar/tests/**", "jobradar/package*.json", "shared/**", ".github/workflows/quality.yml"]
+    paths: ["app/**", "extension/**", "supabase/**", "jobradar/scripts/**", "jobradar/src/**", "jobradar/tests/**", "jobradar/package*.json", "shared/**", ".github/workflows/quality.yml"]
   push:
     branches: [main, "feat/**"]
-    paths: ["app/**", "extension/**", "jobradar/src/**", "jobradar/tests/**", "jobradar/package*.json", "shared/**", ".github/workflows/quality.yml"]
+    paths: ["app/**", "extension/**", "supabase/**", "jobradar/scripts/**", "jobradar/src/**", "jobradar/tests/**", "jobradar/package*.json", "shared/**", ".github/workflows/quality.yml"]
 permissions:
   contents: read
 jobs:
@@ -24,6 +24,8 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      - if: matrix.directory == 'jobradar'
+        run: npm run build:discovery
       - if: matrix.directory == 'app' || matrix.directory == 'extension'
         run: npm run build
       - if: matrix.directory == 'extension'
@@ -34,7 +36,13 @@ jobs:
         run: npm --prefix ../app ci
       - if: matrix.directory == 'extension'
         run: |
-          npm --prefix ../app run dev > /tmp/jobradar-discovery-vite.log 2>&1 &
+          VITE_LOCAL_DISCOVERY=true npm --prefix ../app run dev > /tmp/jobradar-discovery-vite.log 2>&1 &
           discovery_pid=$!
           trap 'kill "$discovery_pid"' EXIT
           npm run test:discovery
+      - if: matrix.directory == 'extension'
+        run: |
+          npm --prefix ../app run dev -- --port 5175 > /tmp/jobradar-hosted-vite.log 2>&1 &
+          hosted_pid=$!
+          trap 'kill "$hosted_pid"' EXIT
+          JOBRADAR_TEST_URL=http://localhost:5175 npm run test:hosted-discovery

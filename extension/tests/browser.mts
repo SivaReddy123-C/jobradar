@@ -30,7 +30,7 @@ async function launch() {
   context.on("requestfailed", r => console.log("Fixture request failed", r.url(), r.failure()?.errorText));
   await context.route("**/*", async route => {
     const u = new URL(route.request().url());
-    if (u.origin === "http://127.0.0.1:5174") return route.fulfill({ body: "<html><body><h1>Local runner harness</h1></body></html>", contentType: "text/html" });
+    if (u.origin === "http://127.0.0.1:5174" || u.origin === "https://sivareddy123-c.github.io" && u.pathname === "/jobradar/runner-harness") return route.fulfill({ body: "<html><body><h1>Local runner harness</h1></body></html>", contentType: "text/html" });
     if (u.hostname === "jobs.ashbyhq.com") {
       console.log("Serving local Ashby fixture", u.pathname);
       const variant = variants.get(u.pathname.split("/")[2]!.slice(0, 8)) ?? "";
@@ -47,7 +47,7 @@ async function launch() {
     if (u.protocol === "chrome-extension:") return route.continue();
     return route.abort(); // All employer requests are fixtures. Nothing reaches the internet.
   });
-  app = await context.newPage(); await app.goto("http://127.0.0.1:5174/runner-harness");
+  app = await context.newPage(); await app.goto("https://sivareddy123-c.github.io/jobradar/runner-harness");
   await app.waitForTimeout(300);
 }
 async function send(action: string, payload?: unknown): Promise<any> {

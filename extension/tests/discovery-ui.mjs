@@ -3,6 +3,7 @@ import { chromium } from 'playwright';
 const browser = await chromium.launch({headless:true});
 const page = await browser.newPage({viewport:{width:1280,height:900}});
 const errors=[]; page.on('pageerror',e=>errors.push(e.message));
+const appUrl = process.env.JOBRADAR_TEST_URL || 'http://localhost:5174';
 let configured=false, searches=0, fail=false, savedResult=null;
 const status=()=>({configured,localMonthlyRequests:searches,localDailyRequests:searches,monthlyLimit:180,dailyLimit:20});
 await page.route('**/__discovery', async route=>{
@@ -21,11 +22,11 @@ await page.route('**/__discovery', async route=>{
 });
 try {
   for(let attempt=0;attempt<40;attempt++) {
-    try {if((await fetch('http://localhost:5174',{signal:AbortSignal.timeout(500)})).ok)break;}
+    try {if((await fetch(appUrl,{signal:AbortSignal.timeout(500)})).ok)break;}
     catch { /* The CI dev server can still be starting; page.goto below reports failure. */ }
     await new Promise(r=>setTimeout(r,300));
   }
-  await page.goto('http://localhost:5174');
+  await page.goto(appUrl);
   await page.locator('.role-option').filter({hasText:/^\+Accountant/}).click();
   await page.getByRole('button',{name:'Continue to locations →'}).click();
   await page.getByRole('checkbox',{name:'India India',exact:true}).check();

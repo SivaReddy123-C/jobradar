@@ -1,0 +1,5 @@
+project_id = "jobradar"
+
+[functions.job-discovery]
+verify_jwt = true
+entrypoint = "./functions/job-discovery/index.ts"

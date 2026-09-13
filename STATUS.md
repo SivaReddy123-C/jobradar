@@ -1,4 +1,14 @@
-# JobRadar — coverage, profiles and Ashby runner, September 13, 2026
+# JobRadar — hosted discovery preparation, September 13, 2026
+
+The existing free Supabase JobRadar project is restored and healthy. The private discovery migration and `job-discovery` Edge Function are deployed with new searches **paused**. The branch contains confirmed-account sign-in, shared 24-hour caches, atomic reservations, per-user/day and global/day/rolling-month quotas, a bounded provider call, and private normalized listing storage. Seven earlier local provider requests have been included in the hosted ledger. No additional live provider calls were made for this implementation.
+
+Pending activation: complete the replacement Supabase CLI login, install the existing provider key as a hosted secret, verify Auth redirects/email delivery and run an authenticated live smoke test. The first CLI code was rejected with HTTP 404; a fresh login is waiting. These changes have not replaced the public release yet. Operational instructions and constraints are in [supabase/README.md](supabase/README.md).
+
+New verification: seven collector HTTP/cache tests, five browser scenarios with intercepted Auth/provider requests, and deployed SQL assertions for privileges, RLS, quota reservations, leases, TTL, cooldown and minute limits. Two simultaneous deployed reservations produced one `reserved` and one `busy`; their fixture records were removed. Builds and type checks pass. Advisor notes and known email-delivery limits are recorded in the hosting guide.
+
+The GitHub repository has been renamed to `SivaReddy123-C/jobradar`. The working public address is now [JobRadar](https://sivareddy123-c.github.io/jobradar/); `/sivareddy/` returns 404. The extension is updated to recognize the new path while retaining the former path for compatibility.
+
+## Previous public release — coverage, profiles and Ashby runner
 
 The USA/India app, expanded employer feed, candidate profiles and queue have been merged into `main` for the [public GitHub Pages site](https://sivareddy123-c.github.io/sivareddy/). The first Ashby application runner is available as the separately installed JobRadar Assist extension. No real applications were sent during this build. JSearch remains a local trial until a hosted backend is configured.
 

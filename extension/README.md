@@ -1,4 +1,4 @@
-# JobRadar Assist 0.3
+# JobRadar Assist 0.3.1
 
 The first application runner supports selected **Ashby** jobs in the USA and India. It reads the employer form, maps saved candidate facts, uploads the selected résumé, checks the resulting values, and submits when the applicant has authorized that run. It uses deterministic code and makes no LLM calls.
 
@@ -19,7 +19,7 @@ npm run build
 4. Start the JobRadar app with `npm run dev` in `app/`. Open `http://localhost:5174` in the same browser as the extension. Reload the page after installing or updating the extension.
 5. In **Queue**, click **Connect JobRadar Assist**.
 
-The bridge accepts only the configured JobRadar GitHub Pages path and local port 5174. The hosted app has not been updated with these changes; use the local preview for this build. Keep the browser open while running applications. Closing the browser or stopping its worker interrupts the run; it does not continue in the cloud.
+The bridge accepts the current [JobRadar GitHub Pages app](https://sivareddy123-c.github.io/jobradar/), the former `/sivareddy/` path, and local port 5174. Version 0.3.1 adds the renamed repository path; reload the unpacked extension after updating. Keep the browser open while running applications. Closing the browser or stopping its worker interrupts the run; it does not continue in the cloud.
 
 ## Use
 
