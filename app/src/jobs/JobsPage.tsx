@@ -78,7 +78,7 @@ function PersonalizedFeed({ applications, onChange, resume, answers, preferences
       <div className="search-locations">{preferences.markets.map((m) => MARKETS[m]).join(" + ")}
         {preferences.location && ` · ${preferences.location}`}{preferences.workplace !== "any" && ` · ${WORKPLACES[preferences.workplace]}`}{preferences.level !== "any" && ` · ${LEVELS[preferences.level]}`}</div>
     </div>
-    <Discovery preferences={preferences} added={extras.length} onResult={value => { setDiscovered(previous => [...previous, ...additionalJobs(previous, value.jobs)]); if (additionalJobs<FeedJob>(feed?.jobs ?? [], value.jobs).length) { setDiscoveryOnly(true); setLimit(PAGE); } }} />
+    <Discovery preferences={preferences} added={extras.length} onResult={value => { setDiscovered(previous => [...previous, ...additionalJobs(previous, value.jobs)]); if (additionalJobs<FeedJob>(feed?.jobs ?? [], value.jobs).length) setLimit(PAGE); }} />
     {extras.length > 0 && <label className="check"><input type="checkbox" checked={discoveryOnly} onChange={e => { setDiscoveryOnly(e.target.checked); setLimit(PAGE); }} />Show only additional jobs ({extras.length})</label>}
     {feed && snapshotAge >= 2 && <div className="freshness-notice" role="status"><strong>This is an older job snapshot.</strong> Collected {feed.generatedAt.slice(0, 10)} ({snapshotAge} days ago). Check the employer page for current availability.</div>}
     {feed?.warnings?.map((warning) => <p className="jobs-error" key={warning} role="status">{warning}</p>)}
