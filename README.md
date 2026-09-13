@@ -4,7 +4,7 @@
 
 See [STATUS.md](STATUS.md) for coverage, validation and remaining work, and [extension/README.md](extension/README.md) to install JobRadar Assist 0.3. Shared deterministic rules power matching and application answers; these flows require no LLM subscription or per-application AI calls.
 
-The local preview also has **My jobs → Search more job sites**, a bounded JSearch discovery trial with private key setup, USA/India matching, deduplication and a 24-hour cache. See [jobradar/JSEARCH.md](jobradar/JSEARCH.md). A real key and measured provider trial are still required; these results are not published by the static feed.
+The local preview also has **My jobs → Search more job sites**, a bounded JSearch discovery trial with private key setup, USA/India matching, deduplication and a 24-hour cache. The September 13 live trial added 27 matching listings across six searches, including 17 published by LinkedIn, after enforcing a local 30-day posting window. Different publishers can still advertise the same opening. See [jobradar/JSEARCH.md](jobradar/JSEARCH.md) for results and limitations; trial records are not published by the static feed.
 
 ### Local development
 

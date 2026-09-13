@@ -42,6 +42,23 @@ test("direct application links are preferred while identity parameters survive d
   assert.equal(j.url, "https://employer.example/apply?job_id=456"); assert.equal(j.discovery.direct, true);
   assert.notEqual(canonicalJobUrl("https://employer.example/apply?job_id=1"), canonicalJobUrl("https://employer.example/apply?job_id=2"));
 });
+test("local freshness rejects provider results older than 30 days without inventing missing dates", () => {
+  const boundary = now.getTime() - 30 * 24 * 60 * 60 * 1000;
+  assert.equal(normalizeJSearch(row({ job_posted_at_datetime_utc: new Date(boundary - 1).toISOString() }), "in", now), null);
+  assert.ok(normalizeJSearch(row({ job_posted_at_datetime_utc: new Date(boundary).toISOString() }), "in", now));
+  assert.equal(normalizeJSearch(row({ job_posted_at_datetime_utc: null }), "in", now)?.publishedAt, null);
+});
+test("cached pages reapply the moving freshness window without another provider request", async t => {
+  const dir = await directory(t); let calls = 0, current = now;
+  const posted = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000 + 30 * 60 * 1000).toISOString();
+  const service = new JSearchService({ directory: dir, getKey: async () => "synthetic-key", now: () => current,
+    fetcher: (async () => { calls++; return ok([row({ job_posted_at_datetime_utc: posted })]); }) as typeof fetch });
+  assert.equal((await service.search(preferences, "accountant")).jobs.length, 1);
+  current = new Date(now.getTime() + 60 * 60 * 1000);
+  const next = await service.search(preferences, "accountant");
+  assert.equal(next.jobs.length, 0); assert.equal(next.requestsUsed, 0);
+  assert.equal(next.queries[0]?.cached, true); assert.equal(calls, 1);
+});
 test("matching rejects unrelated titles despite the provider returning them for the query", () => {
   const { preferences: p, queries } = discoveryQueries(preferences, "accountant");
   const matches = matchingDiscovery([row(), row({ job_title: "Account Executive" }), row({ job_country: "US" })], queries[0]!, p, now);

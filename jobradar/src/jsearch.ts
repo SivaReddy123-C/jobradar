@@ -5,6 +5,7 @@ import { canonicalJobUrl, type DiscoveryJob, type DiscoveryQuery } from "../../s
 
 const text = (v: unknown, max = 500) => typeof v === "string" ? v.trim().slice(0, max) : "";
 const object = (v: unknown): Record<string, unknown> => v && typeof v === "object" && !Array.isArray(v) ? v as Record<string, unknown> : {};
+const MAX_POSTING_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 function iso(value: unknown): string | null { const s = text(value); return s && Number.isFinite(Date.parse(s)) ? new Date(s).toISOString() : null; }
 
 export function discoveryQueries(raw: unknown, roleId: string): { preferences: SearchPreferences; queries: DiscoveryQuery[] } {
@@ -35,6 +36,10 @@ export function normalizeJSearch(row: unknown, market: Market, now: Date): Disco
   if (!title || !company || !id) return null;
   const expiry = iso(r.job_offer_expiration_datetime_utc ?? r.job_expiration_datetime_utc);
   if (expiry && Date.parse(expiry) <= now.getTime()) return null;
+  const publishedAt = iso(r.job_posted_at_datetime_utc);
+  // Live search-v2 results can ignore date_posted=month. Enforce the window on
+  // every read, including cached pages, while leaving unknown dates explicit.
+  if (publishedAt && now.getTime() - Date.parse(publishedAt) > MAX_POSTING_AGE_MS) return null;
   const country = text(r.job_country).toLowerCase();
   const location = text(r.job_location) || [text(r.job_city), text(r.job_state), text(r.job_country)].filter(Boolean).join(", ");
   const markets = publicationMarkets(location, country ? [country] : undefined);
@@ -44,7 +49,6 @@ export function normalizeJSearch(row: unknown, market: Market, now: Date): Disco
   const primary = text(r.job_apply_link, 5000);
   const chosen = direct ? text(direct.apply_link, 5000) : primary || text(options[0]?.apply_link, 5000);
   const url = canonicalJobUrl(chosen); if (!url) return null;
-  const publishedAt = iso(r.job_posted_at_datetime_utc);
   const publisher = text(direct?.publisher ?? r.job_publisher) || "Publisher not provided";
   return {
     key: "jsearch:" + createHash("sha256").update(id).digest("hex"), company, title, location,

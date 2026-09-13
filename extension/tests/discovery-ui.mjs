@@ -31,7 +31,7 @@ try {
   await page.getByText('Key saved.',{exact:false}).waitFor(); assert.equal(await key.count(),0);
   console.log('PASS: local setup UI saves through the local API and clears the key field (intercepted fixture)');
   await page.getByRole('button',{name:'Find additional jobs'}).click();
-  await page.getByText('1 additional unique matches available',{exact:false}).waitFor();
+  await page.getByText('1 additional matching listings available',{exact:false}).waitFor();
   let card=page.locator('.job-card').filter({hasText:'Fixture Coverage Co.'});
   assert.equal(await card.count(),1); assert.match(await card.innerText(),/not assessed/);
   console.log('PASS: discovery results join matching jobs with provider attribution and unassessed risk');

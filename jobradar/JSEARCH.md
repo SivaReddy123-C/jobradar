@@ -8,9 +8,9 @@ Start the app with `npm run dev` from `app/`, then open `http://localhost:5174`.
 
 Alternatively, copy `.env.example` to `.env.local` in this directory and set `OPENWEBNINJA_API_KEY`. Existing process environment variables take precedence. The key is sent only in the `x-api-key` header to `https://api.openwebninja.com`; redirects are rejected. No profile facts, résumé or application answers are sent to JSearch.
 
-Select one of the roles already in your search and click **Find additional jobs**. The request asks for postings from the last month, one page per selected country. Each returned record still has to match the selected role, country, location, work arrangement and experience filters. Empty results never broaden the search.
+Select one of the roles already in your search and click **Find additional jobs**. The request asks for postings from the last month, one page per selected country. A local filter also rejects known posting dates older than 30 days, including when replaying cached pages: the live provider returned older records despite its date filter. Missing dates remain explicitly unknown. Each returned record still has to match the selected role, country, location, work arrangement and experience filters. Empty results never broaden the search.
 
-New unique matches are shown with a **Show only additional jobs** checkbox; clear it to return to the combined feed. Results include the provider/publisher and remain unassessed for posting risk. Prefer explicit direct application options from the response. Discovery-only listings currently use **View & apply**; this trial does not extend the Ashby runner to new source types.
+Additional matching listings are shown with a **Show only additional jobs** checkbox; clear it to return to the combined feed. Exact source IDs and application URLs are deduplicated; different publishers can still advertise the same opening. Results include the provider/publisher and remain unassessed for posting risk. Prefer explicit direct application options from the response. Discovery-only listings currently use **View & apply**; this trial does not extend the Ashby runner to new source types.
 
 ## Request budget and local data
 
@@ -42,6 +42,26 @@ Each command queries one page (or cache) and writes a private `data/jsearch/tria
 
 With the local app running and extension dependencies installed, run `npm run test:discovery` in `extension/`. Its browser fixture intercepts every discovery call and verifies key setup, result integration, duplicate suppression, retained results after errors, mobile layout and runtime errors. CI starts the local app for this test. Synthetic keys are never written to the real collector during this test.
 
-The connector has not established live coverage until a real key is configured and a measured trial succeeds. Do not claim access to all LinkedIn jobs, independent vacancy verification, or improved matching accuracy from fixture results. Public redistribution/production rights need confirmation separately from the provider's technical access; this build keeps the trial local.
+## Live trial — September 13, 2026
+
+A real key successfully queried six role/country combinations between 06:15 and 06:17 UTC. Each query fetched one page of ten records with no city, experience or workplace restriction. The baseline was the committed USA/India feed containing 28,563 market records. The results below were reprocessed from cache after adding the local freshness check; those six replays cost zero additional requests.
+
+| Selected role | Market | Returned | Additional matching listings |
+| --- | --- | ---: | ---: |
+| Accountant | India | 10 | 9 |
+| Hotel front-desk agent | India | 10 | 0 |
+| Registered nurse | India | 10 | 4 |
+| Hotel front-desk agent | USA | 10 | 4 |
+| Teacher | USA | 10 | 3 |
+| Software engineer | USA | 10 | 7 |
+| **Total** | | **60** | **27** |
+
+All 27 passed matching and freshness checks and had distinct source IDs and canonical application URLs, with no exact URL overlap against the baseline. This is a listing count, not 27 independently verified vacancies. Of 47 initially accepted listings, 20 had posting dates older than 30 days and were excluded by the fix. No retained listing had an unknown posting date. Publishers: LinkedIn 17, ZipRecruiter 5, Jobrapido 3 and Glassdoor 2. None provided an explicitly direct employer application link.
+
+The trial consumed six new provider requests; the local counter finished at seven including one request before the trial. Replaying all six queries and displaying the real accountant results through the browser/local API used no further requests. Every page indicated further results; no pagination was requested.
+
+Observed quality limits: the India hotel query returned general receptionist titles without the required hotel/front-office evidence; keeping those excluded preserves the chosen role. National searches returned narrow city clusters (Mumbai/Delhi in India; New York, Chicago or the Wichita area in the USA). Repeated JPMorgan titles across publishers and similar nursing listings may describe the same openings. Some teacher titles explicitly advertise anticipated openings. Title/country/freshness matching alone does not establish eligibility, current hiring or market-wide coverage.
+
+The live trial confirms the connector can retrieve additional listings, including LinkedIn-published ones, and serve them locally. It does not establish access to all LinkedIn jobs or production readiness. Next coverage work should improve city/query control, reconcile publisher copies using employer requisition evidence and measure relevance before increasing request volume. Public redistribution/production rights need confirmation separately from technical access; this build keeps the trial local.
 
 Sources: [JSearch product and pricing](https://www.openwebninja.com/api/jsearch), [official generated API schema](https://github.com/OpenWeb-Ninja/openwebninja-mcp/blob/main/src/generated/manifest.ts), [provider terms](https://www.openwebninja.com/terms).
