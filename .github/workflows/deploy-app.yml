@@ -3,7 +3,7 @@ name: Deploy app
 on:
   push:
     branches: [main]
-    paths: ["app/**", ".github/workflows/deploy-app.yml"]
+    paths: ["app/**", "shared/**", ".github/workflows/deploy-app.yml"]
   workflow_dispatch: {}
 
 permissions:
@@ -32,6 +32,9 @@ jobs:
       - name: Build
         working-directory: app
         run: npm run build
+      - name: Test
+        working-directory: app
+        run: npm test
       - name: Configure Pages
         uses: actions/configure-pages@v5
         with:

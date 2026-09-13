@@ -103,4 +103,5 @@ export interface AppState {
   resume: ResumeData;
   applications: Application[];
   answers: AnswerEntry[];
+  search: import("../../../shared/search.js").SearchPreferences | null;
 }

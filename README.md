@@ -1,3 +1,23 @@
+# JobRadar — choose your role, find your next job
+
+**Current scope: USA and India.** Choose the roles you want, then see matching listings from the supported company boards. Resume editing, saved answers and an application tracker are included.
+
+Development resumed September 13, 2026. See [STATUS.md](STATUS.md) for implemented behavior, validation and remaining work. Search uses shared deterministic rules in `shared/search.ts`; it does not require an AI subscription or account.
+
+### Local development
+
+From `jobradar/`, run `npm ci`, `npm run fetch`, then `npm run feed`. These collect public listings and write local snapshots. From `app/`, run `npm ci` and `npm run dev`. The development server serves the local feed through `/__feed`. Without a refresh, the committed historical snapshot is shown with its date.
+
+Run `npm test` and `npm run typecheck` in both directories; `npm run build` in `app/` checks the production bundle. CI also checks changes to shared matching rules.
+
+Search preferences and candidate data stay in this browser and can be exported as JSON. Auto-apply is a later milestone. Role and location matching are conservative heuristics, and source coverage varies by profession. An empty result is not evidence that no employers are hiring.
+
+---
+
+## Earlier project vision (historical)
+
+The following predates the resumed scope. In particular, funding and application automation decisions require a separate product milestone.
+
 # JobRadar — an honest job-search platform (working title)
 
 > Free for students while they job-hunt. When you land a job, you can pay it

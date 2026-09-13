@@ -1,4 +1,5 @@
 /** Types and fetch/cache logic for the public jobs feed the daily Action publishes. */
+import { isMarket, MARKETS, type Market } from "../../../shared/search.js";
 
 export interface FeedJob {
   key: string;
@@ -23,12 +24,18 @@ export interface FeedJob {
   sponsor?: { approvals: number; denials: number; fy: number; name: string } | null;
   /** The vertical this employer operates in, from the curated list. */
   industry?: string | null;
+  markets?: Market[];
+  remote?: boolean | null;
+  workplace?: "remote" | "hybrid" | "onsite" | null;
+  lastSeenAt?: string;
+  roleClassification?: { version: number; ids: string[] };
 }
 
 export interface Feed {
   generatedAt: string;
   total: number;
   jobs: FeedJob[];
+  warnings?: string[];
 }
 
 // Served from GitHub raw (free, CORS-enabled).
@@ -37,15 +44,19 @@ export interface Feed {
 // cache - localStorage caps near 5 MB - so every refresh re-downloaded and
 // re-parsed the whole file and the cache write failed silently every time.
 // That is what "nothing synced and refreshed" looked like from the outside.
-const BASE = "https://raw.githubusercontent.com/SivaReddy123-C/sivareddy/main/jobradar/data/feed";
+const BASE = import.meta.env?.DEV ? "/__feed" : "https://raw.githubusercontent.com/SivaReddy123-C/sivareddy/main/jobradar/data/feed";
 
 /** Countries fetched when the user has expressed no preference. */
-const DEFAULT_COUNTRIES = ["in", "us", "gb", "de", "sg", "ae", "ca", "nl"];
+const DEFAULT_COUNTRIES = ["us", "in"];
+function requestedCountries(countries?: string[]): Market[] {
+  return [...new Set((countries ?? DEFAULT_COUNTRIES).map((c) => c.toLowerCase()).filter(isMarket))];
+}
 
 export interface ShardIndex {
   generatedAt: string;
   total: number;
   shards: { country: string; jobs: number; bytes: number; file: string }[];
+  warnings?: string[];
 }
 
 interface Shard {
@@ -74,12 +85,13 @@ interface ShardEnvelope { cachedAt: number; shard: Shard }
 /** Set when a shard could not be stored, so the UI can say why. */
 export let lastCacheNote = "";
 
-function readShardCache(country: string): Shard | null {
+function readShardCache(country: string, allowStale = false): Shard | null {
   try {
     const raw = localStorage.getItem(SHARD_KEY(country));
     if (!raw) return null;
     const env = JSON.parse(raw) as ShardEnvelope;
-    return Date.now() - env.cachedAt < CACHE_TTL_MS ? env.shard : null;
+    if (env.shard?.country !== country || !Array.isArray(env.shard.jobs)) return null;
+    return allowStale || Date.now() - env.cachedAt < CACHE_TTL_MS ? env.shard : null;
   } catch {
     // silent-ok: an unreadable cache entry is the same as a miss, and the
     // shard is about to be refetched anyway.
@@ -139,13 +151,15 @@ function dropLegacyCaches(): void {
 }
 
 async function getJson<T>(url: string): Promise<T> {
-  const res = await fetch(url, { cache: "no-cache" });
+  const res = await fetch(url, { cache: "no-cache", signal: AbortSignal.timeout(20000) });
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
   return (await res.json()) as T;
 }
 
 export async function loadIndex(): Promise<ShardIndex> {
-  return getJson<ShardIndex>(`${BASE}/index.json`);
+  const index = await getJson<ShardIndex>(`${BASE}/index.json`);
+  const shards = index.shards.filter((s) => isMarket(s.country));
+  return { ...index, shards, total: shards.reduce((n, s) => n + s.jobs, 0) };
 }
 
 /** Re-attach what the shard hoisted out, so callers still see whole jobs. */
@@ -160,58 +174,61 @@ function expand(shard: Shard): FeedJob[] {
 
 /** Whatever is already cached for these countries, without touching the network. */
 export function readCache(countries?: string[]): { feed: Feed } | null {
-  const want = (countries?.length ? countries : DEFAULT_COUNTRIES).map((c) => c.toLowerCase());
+  const want = requestedCountries(countries);
   const jobs: FeedJob[] = [];
   let generatedAt = "";
   for (const c of want) {
     const shard = readShardCache(c);
     if (!shard) continue;
     jobs.push(...expand(shard));
-    if (shard.generatedAt > generatedAt) generatedAt = shard.generatedAt;
+    if (!generatedAt || shard.generatedAt < generatedAt) generatedAt = shard.generatedAt;
   }
-  return jobs.length > 0 ? { feed: { generatedAt, total: jobs.length, jobs } } : null;
+  const unique = [...new Map(jobs.map((j) => [j.key, j])).values()];
+  return unique.length > 0 ? { feed: { generatedAt, total: unique.length, jobs: unique } } : null;
 }
 
 export async function loadFeed(force = false, countries?: string[]): Promise<Feed> {
   dropLegacyCaches();
-  const want = (countries?.length ? countries : DEFAULT_COUNTRIES).map((c) => c.toLowerCase());
+  lastCacheNote = "";
+  const want = requestedCountries(countries);
+  if (!want.length) throw new Error("Choose USA or India to load jobs.");
 
   const index = await loadIndex();
   const available = new Set(index.shards.map((s) => s.country));
   const targets = want.filter((c) => available.has(c));
-  if (targets.length === 0) {
-    throw new Error(`No feed for ${want.join(", ").toUpperCase()} yet - the countries on your profile have no postings in this run.`);
-  }
+  const warnings = [...(index.warnings ?? []), ...want.filter((c) => !available.has(c)).map((c) => `No published feed for ${MARKETS[c]} in this snapshot.`)];
+  if (targets.length === 0) return { generatedAt: index.generatedAt, total: 0, jobs: [], warnings };
 
   const failed: string[] = [];
+  const dates: string[] = [];
   const results = await Promise.all(targets.map(async (c) => {
     if (!force) {
       const hit = readShardCache(c);
-      if (hit) return expand(hit);
+      if (hit) { dates.push(hit.generatedAt); return expand(hit); }
     }
     try {
       const shard = await getJson<Shard>(`${BASE}/${c}.json`);
+      if (shard.country !== c) throw new Error("Unexpected feed country");
+      dates.push(shard.generatedAt);
       writeShardCache(c, shard);
       return expand(shard);
     } catch {
       // silent-ok per shard, reported in aggregate below: one country failing
-      // must not deny the user the other six.
+      // must not deny the user their other selected country.
       failed.push(c);
-      const stale = readShardCache(c);
+      const stale = readShardCache(c, true);
+      if (stale) dates.push(stale.generatedAt);
       return stale ? expand(stale) : [];
     }
   }));
-  const jobs = results.flat();
+  const jobs = [...new Map(results.flat().map((j) => [j.key, j])).values()];
 
-  if (jobs.length === 0) {
-    throw new Error(failed.length > 0
-      ? `Could not load ${failed.join(", ").toUpperCase()}`
-      : "Feed not available yet");
-  }
+  if (jobs.length === 0 && failed.length) throw new Error(`Could not load ${failed.join(", ").toUpperCase()}`);
   if (failed.length > 0) {
     lastCacheNote = `Could not refresh ${failed.join(", ").toUpperCase()}; showing what loaded.`;
+    warnings.push(lastCacheNote);
   }
-  return { generatedAt: index.generatedAt, total: jobs.length, jobs };
+  return { generatedAt: dates.sort()[0] ?? index.generatedAt, total: jobs.length, jobs, warnings };
 }
 
 /**
@@ -267,6 +284,7 @@ export function defaultFilters(): JobFilters {
 export function applyFilters(jobs: FeedJob[], f: JobFilters): FeedJob[] {
   const q = f.q.trim().toLowerCase();
   let out = jobs.filter((j) => {
+    if (!isMarket(j.country)) return false;
     if (f.country !== "all" && j.country !== f.country) return false;
     if (f.hideHighGhost && (j.ghost.band === "high" || j.ghost.band === "critical")) return false;
     if (f.sponsorshipOnly && j.sponsorship === "no") return false;

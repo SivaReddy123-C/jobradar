@@ -1,3 +1,30 @@
+# JobRadar — development resumed, September 13, 2026
+
+The first resumed milestone implements role selection and a personalized USA/India feed. It is on the local branch `feat/role-first-usa-india`; it has not been deployed.
+
+- Users explicitly choose roles and USA, India, or both. The resume does not choose roles for them.
+- Shared deterministic matching handles known titles and user-defined title phrases. No AI calls are needed for this search flow.
+- The current catalog covers 51 roles across 17 fields, with custom roles available. This is not universal coverage.
+- Empty results stay empty. Optional location, experience and work-arrangement filters require positive evidence.
+- Existing local resume, answers, tracker and JSON exports migrate without losing data.
+- The collector publishes only two market shards, with title classifications, last-seen dates and partial-source warnings.
+- Remote without explicit geographic evidence is not assumed to be available in either country.
+- Development preview serves the locally generated public feed. Production still points to the committed feed on main.
+- Daily refresh and sponsorship schedules remain paused. The account-backed feed is no longer in the navigation; its legacy modules remain for a later migration.
+- Automatic application submission, accounts and paid plans are not implemented in this milestone.
+
+Validation: 38 app tests and 93 pipeline tests; app production build and both TypeScript checks. Browser checks cover saved selections, India accountant results, USA frontend results, empty results, existing navigation and mobile overflow. This is functional validation, not the planned large labeled precision/recall benchmark.
+
+Current source coverage is uneven. The September 13 run fetched 61,318 jobs from 325/337 boards. Its supported-market output contains 26,475 records (26,468 distinct source job keys): 22,891 USA and 3,584 India. Twelve unavailable boards are disclosed in the feed. Hotel front-desk coverage was empty in this snapshot. This does not measure the wider job market.
+
+Next: expand coverage for nontechnical occupations, validate matching on a labeled sample, then build one application-site adapter with stored candidate answers, explicit submission scope, duplicate prevention and verifiable submission results.
+
+---
+
+## Archived August 27 assessment
+
+The following is historical project context, not the current plan or a current operational-status claim.
+
 # JobRadar — stopped 2026-08-27
 
 Siva called it: *"we are wasting so much time digging real and genuine job

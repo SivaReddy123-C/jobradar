@@ -1,189 +1,107 @@
 import { useEffect, useMemo, useState } from "react";
+import { classifyRoles, LEVELS, MARKETS, matchJob, ROLE_VERSION, WORKPLACES, type SearchPreferences } from "../../../shared/search.js";
 import { daysSince } from "../lib/stats.js";
 import { uid } from "../lib/storage.js";
 import { buildApplicationPack } from "../lib/pack.js";
 import type { AnswerEntry, Application, ResumeData } from "../lib/types.js";
-import {
-  COUNTRY_LABELS, applyFilters, defaultFilters, loadFeed, readCache,
-  type Feed, type FeedJob, type JobFilters,
-} from "./feed.js";
+import { applyFilters, defaultFilters, loadFeed, readCache, type Feed, type FeedJob, type JobFilters } from "./feed.js";
 import { SponsorBadge } from "./SponsorBadge.js";
-
-const PAGE = 50;
+import { SearchSetup } from "./SearchSetup.js";
 
 interface Props {
-  applications: Application[];
-  onChange: (apps: Application[]) => void;
-  resume: ResumeData;
-  answers: AnswerEntry[];
+  applications: Application[]; onChange: (apps: Application[]) => void;
+  resume: ResumeData; answers: AnswerEntry[];
+  preferences: SearchPreferences | null; onPreferencesChange: (preferences: SearchPreferences) => void;
 }
-
-export function JobsPage({ applications, onChange, resume, answers }: Props) {
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  async function copyPack(key: string) {
-    await navigator.clipboard.writeText(buildApplicationPack(resume, answers));
-    setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), 1500);
-  }
-  const [feed, setFeed] = useState<Feed | null>(() => readCache()?.feed ?? null);
-  const [loading, setLoading] = useState(false);
+export function JobsPage(props: Props) {
+  const [editing, setEditing] = useState(false);
+  if (!props.preferences || editing) return <SearchSetup initial={props.preferences}
+    onCancel={props.preferences ? () => setEditing(false) : undefined}
+    onSave={(preferences) => { props.onPreferencesChange(preferences); setEditing(false); }} />;
+  // A changed search gets a new lifecycle; old requests cannot replace the new feed.
+  return <PersonalizedFeed key={JSON.stringify(props.preferences)} {...props} preferences={props.preferences} onEdit={() => setEditing(true)} />;
+}
+const PAGE = 30;
+function PersonalizedFeed({ applications, onChange, resume, answers, preferences, onEdit }: Props & { preferences: SearchPreferences; onEdit: () => void }) {
+  const [feed, setFeed] = useState<Feed | null>(() => readCache(preferences.markets)?.feed ?? null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [refreshCount, setRefreshCount] = useState(0);
   const [filters, setFilters] = useState<JobFilters>(defaultFilters());
   const [limit, setLimit] = useState(PAGE);
-
-  async function refresh(force: boolean) {
-    setLoading(true);
-    setError("");
-    try {
-      setFeed(await loadFeed(force));
-    } catch (err) {
-      setError(`Couldn't load the jobs feed: ${(err as Error).message}`);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => { void refresh(false); }, []);
-  useEffect(() => setLimit(PAGE), [filters]);
-
-  const appliedUrls = useMemo(
-    () => new Set(applications.map((a) => a.url).filter(Boolean)),
-    [applications],
-  );
-
+  const [copiedKey, setCopiedKey] = useState("");
+  const [copyError, setCopyError] = useState("");
+  useEffect(() => {
+    let active = true;
+    setLoading(true); setError("");
+    loadFeed(refreshCount > 0, preferences.markets).then((value) => { if (active) setFeed(value); })
+      .catch((err: Error) => { if (active) setError(err.message); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [preferences.markets, refreshCount]);
+  const classified = useMemo(() => feed?.jobs.map((job) => ({ ...job,
+    roleClassification: job.roleClassification?.version === ROLE_VERSION ? job.roleClassification : { version: ROLE_VERSION, ids: classifyRoles(job.title) },
+  })) ?? [], [feed]);
+  const matches = useMemo(() => classified.flatMap((job) => {
+    const match = matchJob(job, preferences);
+    return match && /^https?:\/\//i.test(job.url) ? [{ job, match }] : [];
+  }), [classified, preferences]);
+  const matchByKey = useMemo(() => new Map(matches.map((m) => [m.job.key, m.match])), [matches]);
+  const visible = useMemo(() => applyFilters(matches.map((m) => m.job), filters), [matches, filters]);
+  const appliedUrls = useMemo(() => new Set(applications.map((a) => a.url).filter(Boolean)), [applications]);
+  function updateFilters(next: JobFilters) { setFilters(next); setLimit(PAGE); }
   function logApplied(job: FeedJob) {
+    if (appliedUrls.has(job.url)) return;
     const now = new Date().toISOString();
-    onChange([
-      {
-        id: uid(),
-        company: job.company,
-        title: job.title,
-        url: job.url,
-        location: job.location,
-        source: "jobradar",
-        appliedAt: now,
-        status: "applied",
-        statusChangedAt: now,
-        notes: "",
-      },
-      ...applications,
-    ]);
+    onChange([{ id: uid(), company: job.company, title: job.title, url: job.url, location: job.location,
+      source: "jobradar", appliedAt: now, status: "applied", statusChangedAt: now, notes: "Manually marked as applied; submission not verified by JobRadar." }, ...applications]);
   }
-
-  const visible = useMemo(
-    () => (feed ? applyFilters(feed.jobs, filters) : []),
-    [feed, filters],
-  );
-
-  return (
-    <div className="jobs">
-      <div className="jobs-toolbar">
-        <input
-          className="jobs-search"
-          placeholder="Search title, company, location..."
-          value={filters.q}
-          onChange={(e) => setFilters({ ...filters, q: e.target.value })}
-        />
-        <select value={filters.country}
-          onChange={(e) => setFilters({ ...filters, country: e.target.value })}>
-          <option value="all">All countries</option>
-          {Object.entries(COUNTRY_LABELS).map(([code, label]) => (
-            <option key={code} value={code}>{label}</option>
-          ))}
-        </select>
-        <select value={filters.sort}
-          onChange={(e) => setFilters({ ...filters, sort: e.target.value as JobFilters["sort"] })}>
-          <option value="ghost">Least ghost risk first</option>
-          <option value="newest">Newest first</option>
-          <option value="company">Company A–Z</option>
-        </select>
-        <label className="check">
-          <input type="checkbox" checked={filters.hideHighGhost}
-            onChange={(e) => setFilters({ ...filters, hideHighGhost: e.target.checked })} />
-          Hide likely ghosts
-        </label>
-        <label className="check" title='Hides postings whose description explicitly says no visa sponsorship. "Doesn&apos;t say" is kept - most postings don&apos;t state it.'>
-          <input type="checkbox" checked={filters.sponsorshipOnly}
-            onChange={(e) => setFilters({ ...filters, sponsorshipOnly: e.target.checked })} />
-          Hide "won't sponsor visa"
-        </label>
-        <label className="check" title="Only employers with H-1B petitions on USCIS federal record">
-          <input type="checkbox" checked={filters.sponsorsOnly}
-            onChange={(e) => setFilters({ ...filters, sponsorsOnly: e.target.checked })} />
-          Proven H-1B sponsors only
-        </label>
-        <button onClick={() => refresh(true)} disabled={loading}>
-          {loading ? "Loading..." : "Refresh"}
-        </button>
-      </div>
-
-      {feed && (
-        <p className="jobs-meta">
-          {visible.length} of {feed.total} postings · data from official ATS APIs, updated daily ·
-          snapshot {feed.generatedAt.slice(0, 10)} · ghost scores are heuristics with reasons shown — judge for yourself
-        </p>
-      )}
-      {error && <p className="jobs-error">{error} {feed ? "(showing cached data)" : "— the feed appears after the first daily fetch publishes it."}</p>}
-      {!feed && !error && loading && <p className="jobs-meta">Loading jobs feed...</p>}
-
-      <div className="job-list">
-        {visible.slice(0, limit).map((j) => {
-          const applied = appliedUrls.has(j.url);
-          const posted = j.publishedAt ?? j.firstSeenAt;
-          return (
-            <div className={`card job-card ghost-${j.ghost.band}`} key={j.key}>
-              <div className="job-main">
-                <div className="job-title">
-                  <strong>{j.company}</strong> · {j.title}
-                </div>
-                <div className="job-meta">
-                  {j.location} · posted {daysSince(posted)}d ago
-                  {j.hasSalaryInfo && <span className="tag tag-salary">salary stated</span>}
-                  {j.sponsorship === "yes" && <span className="tag tag-sponsor">sponsors visa</span>}
-                  {j.sponsorship === "no" && <span className="tag tag-nosponsor">won't sponsor</span>}
-                  <SponsorBadge job={j} />
-                </div>
-                {j.ghost.reasons.length > 0 && (
-                  <details className="ghost-details">
-                    <summary>
-                      <GhostBadge band={j.ghost.band} score={j.ghost.score} /> why?
-                    </summary>
-                    <ul>
-                      {j.ghost.reasons.map((r, i) => <li key={i}>{r}</li>)}
-                    </ul>
-                  </details>
-                )}
-                {j.ghost.reasons.length === 0 && <GhostBadge band={j.ghost.band} score={j.ghost.score} />}
-              </div>
-              <div className="job-actions">
-                <a className="btn-link" href={j.url} target="_blank" rel="noreferrer">Open posting ↗</a>
-                <button onClick={() => copyPack(j.key)} title="Contact info + standard answers, ready to paste">
-                  {copiedKey === j.key ? "Copied ✓" : "Copy pack"}
-                </button>
-                {applied ? (
-                  <span className="applied-mark">Logged ✓</span>
-                ) : (
-                  <button className="primary" onClick={() => logApplied(j)}
-                    title="Adds this job to your tracker as applied today">
-                    I applied — log it
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {visible.length > limit && (
-        <button className="load-more" onClick={() => setLimit((n) => n + PAGE)}>
-          Show more ({visible.length - limit} remaining)
-        </button>
-      )}
+  async function copyPack(key: string) {
+    try { await navigator.clipboard.writeText(buildApplicationPack(resume, answers)); setCopiedKey(key); setCopyError(""); }
+    catch { setCopyError("Could not copy. Your saved answers are available in Apply kit."); }
+  }
+  const snapshotAge = feed ? daysSince(feed.generatedAt) : 0;
+  return <section className="jobs personalized-jobs" aria-labelledby="jobs-heading">
+    <header className="search-heading"><div><p className="eyebrow">YOUR NEXT CHAPTER</p><h1 id="jobs-heading">Your roles. Your opportunities.</h1>
+      <p>Openings for the work you chose, in the places you selected.</p></div><button onClick={onEdit}>Edit my search</button></header>
+    <div className="search-summary-bar">
+      <div className="search-tags">{preferences.roles.map((r) => <span key={r.id}>{r.label}</span>)}</div>
+      <div className="search-locations">{preferences.markets.map((m) => MARKETS[m]).join(" + ")}
+        {preferences.location && ` · ${preferences.location}`}{preferences.workplace !== "any" && ` · ${WORKPLACES[preferences.workplace]}`}{preferences.level !== "any" && ` · ${LEVELS[preferences.level]}`}</div>
     </div>
-  );
-}
-
-function GhostBadge({ band, score }: { band: FeedJob["ghost"]["band"]; score: number }) {
-  const label = { low: "looks live", medium: "some doubt", high: "ghost risk", critical: "likely ghost" }[band];
-  return <span className={`ghost-badge-pill pill-${band}`}>{label} · {score}</span>;
+    {feed && snapshotAge >= 2 && <div className="freshness-notice" role="status"><strong>This is an older job snapshot.</strong> Collected {feed.generatedAt.slice(0, 10)} ({snapshotAge} days ago). Check the employer page for current availability.</div>}
+    {feed?.warnings?.map((warning) => <p className="jobs-error" key={warning} role="status">{warning}</p>)}
+    <div className="jobs-toolbar">
+      <label className="jobs-search"><span className="sr-only">Search within my matches</span><input placeholder="Search within your matches…" value={filters.q} onChange={(e) => updateFilters({ ...filters, q: e.target.value })} /></label>
+      <label><span className="sr-only">Sort matches</span><select value={filters.sort} onChange={(e) => updateFilters({ ...filters, sort: e.target.value as JobFilters["sort"] })}>
+        <option value="ghost">Lowest posting risk</option><option value="newest">Newest first</option><option value="company">Company A–Z</option>
+      </select></label>
+      <label className="check"><input type="checkbox" checked={filters.hideHighGhost} onChange={(e) => updateFilters({ ...filters, hideHighGhost: e.target.checked })} />Hide high-risk postings</label>
+      <button onClick={() => setRefreshCount((n) => n + 1)} disabled={loading}>{loading ? "Loading…" : "Reload feed"}</button>
+    </div>
+    {error && <p className="jobs-error" role="alert">Could not refresh jobs: {error}{feed ? " Showing the previously loaded snapshot." : " Try reloading the feed."}</p>}
+    {copyError && <p className="jobs-error" role="alert">{copyError}</p>}
+    <p className="jobs-meta" aria-live="polite">{loading && !feed ? "Loading your selected markets…" : feed ? `${visible.length.toLocaleString()} matching openings · ${matches.length.toLocaleString()} before additional filters · Snapshot ${feed.generatedAt.slice(0, 10)}` : "No feed loaded."}</p>
+    {!loading && feed && visible.length === 0 && <div className="jobs-empty card"><span className="empty-symbol" aria-hidden="true">◎</span><h2>No matching openings in this snapshot.</h2>
+      <p>{matches.length ? "Your additional filters removed the current matches. Clear them to see your selected roles." : "Our covered sources have no matches for these choices right now. Your roles and markets have stayed the same."}</p>
+      {matches.length ? <button onClick={() => updateFilters(defaultFilters())}>Clear additional filters</button> : <button onClick={onEdit}>Review my search</button>}</div>}
+    <div className="job-list">{visible.slice(0, limit).map((job) => <article className="card job-card" key={job.key}>
+      <div className="job-main"><div className="job-company">{job.company}<span>{matchByKey.get(job.key)?.markets.map((m) => MARKETS[m]).join(" + ")}</span></div><h2 className="job-role">{job.title}</h2>
+        <p className="job-meta">{job.location} · {job.publishedAt ? `Posted ${daysSince(job.publishedAt)} days ago` : `First seen ${daysSince(job.firstSeenAt)} days ago`}</p>
+        <p className="match-reason">Matches your {matchByKey.get(job.key)?.roles.join(" / ")} search</p>
+        <div className="job-meta">{job.hasSalaryInfo && <span className="tag tag-salary">Salary stated</span>}
+          {job.sponsorship === "yes" && <span className="tag tag-sponsor">Sponsorship mentioned</span>}
+          {job.sponsorship === "no" && <span className="tag tag-nosponsor">No sponsorship stated</span>}
+          {job.country === "us" && job.sponsor && <SponsorBadge job={job} />}
+        </div>
+        <details className="ghost-details"><summary>Posting signals · {job.ghost.band === "low" ? "low risk" : `${job.ghost.band} risk`}</summary>
+          <p>These signals are estimates, not confirmation of active hiring.</p><ul>{job.ghost.reasons.map((reason, i) => <li key={i}>{reason}</li>)}</ul>
+          <p>Source: {job.source}. Last seen: {(job.lastSeenAt ?? feed?.generatedAt ?? "").slice(0, 10)}.</p>
+        </details>
+      </div><div className="job-actions"><a className="btn-link primary-link" href={job.url} target="_blank" rel="noreferrer">View & apply ↗</a>
+        <button onClick={() => copyPack(job.key)}>{copiedKey === job.key ? "Copied ✓" : "Copy my answers"}</button>
+        {appliedUrls.has(job.url) ? <span className="applied-mark">Logged in tracker ✓</span> : <button onClick={() => logApplied(job)} title="Manually record an application you already submitted">Mark as applied</button>}
+      </div></article>)}</div>
+    {visible.length > limit && <button className="load-more" onClick={() => setLimit((n) => n + PAGE)}>Show more ({visible.length - limit} remaining)</button>}
+  </section>;
 }

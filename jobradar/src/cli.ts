@@ -6,6 +6,8 @@ import { assessGhost } from "./ghost.js";
 import { detectCountry, matchesCountry, slotKey, sponsorshipSignal, type Country } from "./normalize.js";
 import { extractTags } from "./skills.js";
 import { industryOf } from "./verticals.js";
+import { classifyRoles, ROLE_VERSION } from "../../shared/search.js";
+import { publicationMarkets } from "./publication.js";
 import { greenhouse } from "./sources/greenhouse.js";
 import { lever } from "./sources/lever.js";
 import { ashby } from "./sources/ashby.js";
@@ -79,6 +81,7 @@ async function fetchAll(): Promise<void> {
     }
   }
   await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+  if (results.length === 0) throw new Error("No boards were fetched. Keeping the previous snapshot.");
 
   // Scoring stays sequential and after the fetch: it touches the shared
   // longitudinal store, and keeping it single-threaded keeps that honest.
@@ -104,7 +107,8 @@ async function fetchAll(): Promise<void> {
     void company;
   }
 
-  store.writeLatest({ fetchedAt: new Date().toISOString(), jobs: all });
+  store.writeLatest({ fetchedAt: new Date().toISOString(), jobs: all,
+    collection: { attempted: seeds.length, succeeded: results.length, failed: seeds.length - results.length } });
   console.log(`\nTotal: ${all.length} jobs from ${results.length}/${seeds.length} boards -> data/latest.json`);
 }
 
@@ -322,7 +326,7 @@ function stats(): void {
  */
 async function feed(): Promise<void> {
   const store = new Store(DATA);
-  const latest = store.readLatest<{ fetchedAt: string; jobs: ScoredJob[] }>();
+  const latest = store.readLatest<{ fetchedAt: string; jobs: ScoredJob[]; collection?: { attempted: number; succeeded: number; failed: number } }>();
   if (!latest) {
     console.error("No data yet - run `npm run fetch` first.");
     process.exit(1);
@@ -357,14 +361,18 @@ async function feed(): Promise<void> {
   }
 
   const entries = latest.jobs
-    .map((j) => {
-      const country = detectCountry(j.location);
-      return country === null ? null : {
+    .flatMap((j) => {
+      const markets = publicationMarkets(j.location);
+      return markets.map((country) => ({
         key: j.key,
         company: j.company,
         title: j.title,
         location: j.location,
         country,
+        markets,
+        remote: j.remote,
+        lastSeenAt: j.lastSeenAt,
+        roleClassification: { version: ROLE_VERSION, ids: classifyRoles(j.title) },
         url: j.url,
         source: j.source,
         publishedAt: j.publishedAt,
@@ -378,7 +386,7 @@ async function feed(): Promise<void> {
         // hotel companies".
         industry: industryOf(j.company),
         sponsor: sponsorByCompany.get(j.company) ?? null,
-      };
+      }));
     })
     .filter((x): x is NonNullable<typeof x> => x !== null);
   // Shard by country.
@@ -390,7 +398,7 @@ async function feed(): Promise<void> {
   // in Singapore; they need their own countries.
   const shardDir = join(DATA, "feed");
   mkdirSync(shardDir, { recursive: true });
-  const byCountry = new Map<string, typeof entries>();
+  const byCountry = new Map<string, typeof entries>([["us", []], ["in", []]]);
   for (const e of entries) {
     const key = e.country ?? "other";
     const bucket = byCountry.get(key);
@@ -433,7 +441,10 @@ async function feed(): Promise<void> {
   }
   shards.sort((a, b) => b.jobs - a.jobs);
 
-  const index = { generatedAt: latest.fetchedAt, total: entries.length, shards };
+  const warnings = latest.collection?.failed
+    ? [`${latest.collection.succeeded} of ${latest.collection.attempted} company boards responded. Listings from ${latest.collection.failed} unavailable boards are missing from this snapshot.`]
+    : !latest.collection ? ["Source coverage details are unavailable for this snapshot."] : [];
+  const index = { generatedAt: latest.fetchedAt, total: entries.length, shards, warnings, collection: latest.collection };
   writeFileSync(join(shardDir, "index.json"), `${JSON.stringify(index, null, 2)}\n`);
 
   const mb = (n: number) => `${(n / 1048576).toFixed(1)}MB`;

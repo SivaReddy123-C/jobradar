@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { exportJson, importJson, lastStorageError, loadState, saveState } from "./lib/storage.js";
 import type { AppState } from "./lib/types.js";
 import { JobsPage } from "./jobs/JobsPage.js";
@@ -6,17 +6,11 @@ import { ApplyKitPage } from "./kit/ApplyKitPage.js";
 import { ResumePage } from "./resume/ResumePage.js";
 import { TrackerPage } from "./tracker/TrackerPage.js";
 
-type Tab = "resume" | "jobs" | "foryou" | "tracker" | "kit";
-
-// Account layer loads only when opened - keeps the base bundle small and the
-// local-first tabs fully independent of it.
-const ForYouPage = lazy(() =>
-  import("./foryou/ForYouPage.js").then((m) => ({ default: m.ForYouPage })),
-);
+type Tab = "resume" | "jobs" | "tracker" | "kit";
 
 export function App() {
   const [state, setState] = useState<AppState>(() => loadState());
-  const [tab, setTab] = useState<Tab>("resume");
+  const [tab, setTab] = useState<Tab>("jobs");
   const [saveError, setSaveError] = useState("");
 
   // Persist on every change - the browser is the database, so a failed write
@@ -58,17 +52,14 @@ export function App() {
         <div className="brand">
           <span className="brand-mark" aria-hidden="true" />
           <strong>JobRadar</strong>
-          <span className="tagline">your data stays in your browser</span>
+          <span className="tagline">Your next role. USA & India.</span>
         </div>
         <nav>
+          <button className={tab === "jobs" ? "active" : ""} onClick={() => setTab("jobs")}>
+            My jobs
+          </button>
           <button className={tab === "resume" ? "active" : ""} onClick={() => setTab("resume")}>
             Resume
-          </button>
-          <button className={tab === "jobs" ? "active" : ""} onClick={() => setTab("jobs")}>
-            Jobs
-          </button>
-          <button className={tab === "foryou" ? "active" : ""} onClick={() => setTab("foryou")}>
-            For you
           </button>
           <button className={tab === "kit" ? "active" : ""} onClick={() => setTab("kit")}>
             Apply kit
@@ -107,17 +98,9 @@ export function App() {
           onChange={(applications) => setState((s) => ({ ...s, applications }))}
           resume={state.resume}
           answers={state.answers}
+          preferences={state.search}
+          onPreferencesChange={(search) => setState((s) => ({ ...s, search }))}
         />
-      )}
-      {tab === "foryou" && (
-        <Suspense fallback={<div className="foryou"><p className="jobs-meta">Loading…</p></div>}>
-          <ForYouPage
-            applications={state.applications}
-            onChange={(applications) => setState((s) => ({ ...s, applications }))}
-            resume={state.resume}
-            answers={state.answers}
-          />
-        </Suspense>
       )}
       {tab === "kit" && (
         <ApplyKitPage
@@ -134,9 +117,8 @@ export function App() {
       )}
 
       <footer className="foot no-print">
-        Free while you job-hunt. Open source, open books, no credential custody. Resume and
-        tracker live in your browser; an optional account powers only your daily matches.
-        Export your data any time — it's yours.
+        Built for your next chapter. Your search preferences, résumé and tracker stay in this browser.
+        Export your data any time. USA & India.
       </footer>
     </div>
   );
