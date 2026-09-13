@@ -1,23 +1,22 @@
-# JobRadar — development resumed, September 13, 2026
+# JobRadar — coverage, profiles and Ashby runner, September 13, 2026
 
-The first resumed milestone implements role selection and a personalized USA/India feed. It is on the local branch `feat/role-first-usa-india`; it has not been deployed.
+The local branch `feat/role-first-usa-india` now includes an expanded USA/India feed, candidate profiles and the first Ashby application runner. It has not been pushed or deployed. No real applications were sent during this build.
 
-- Users explicitly choose roles and USA, India, or both. The resume does not choose roles for them.
-- Shared deterministic matching handles known titles and user-defined title phrases. No AI calls are needed for this search flow.
-- The current catalog covers 51 roles across 17 fields, with custom roles available. This is not universal coverage.
-- Empty results stay empty. Optional location, experience and work-arrangement filters require positive evidence.
-- Existing local resume, answers, tracker and JSON exports migrate without losing data.
-- The collector publishes only two market shards, with title classifications, last-seen dates and partial-source warnings.
-- Remote without explicit geographic evidence is not assumed to be available in either country.
-- Development preview serves the locally generated public feed. Production still points to the committed feed on main.
-- Daily refresh and sponsorship schedules remain paused. The account-backed feed is no longer in the navigation; its legacy modules remain for a later migration.
-- Automatic application submission, accounts and paid plans are not implemented in this milestone.
+- Users explicitly choose roles and USA, India, or both. The 51-role catalog across 17 fields also accepts custom titles. Matching remains deterministic; empty results do not broaden the search.
+- Five verified boards were added: Accor Hotels, Westgate Resorts, KIPP Public Schools, School in the Square and DaVita. Structured SmartRecruiters country codes now survive normalization.
+- The composite September 13 snapshot contains **28,563 supported-market records** (28,556 distinct source job keys): 24,260 USA and 4,303 India. This is **2,088 more records** than the preceding local snapshot. Seven listings appear in both market shards.
+- Source collection is 330/342 successful boards; the feed discloses the 12 unavailable boards. The older component's timestamp is preserved. DaVita collection is capped at 2,000 global records, and only 94 had recognized supported-market evidence; that board is not complete.
+- Front-desk matching now recognizes Indian titles such as GSA–Front Office and distinguishes food-and-beverage/housekeeping roles. Current title matches include 19 USA + 46 India front-desk roles and 30 USA + 30 India housekeeping roles. Teaching/nursing coverage in India remains empty in this snapshot. These counts are not market-size estimates or validated precision/recall measurements.
+- **Profile** stores versioned contact facts, three PDF/DOCX résumé assets, independent market answers, compensation units and exact role/market-scoped question answers. Documents persist in IndexedDB. Legacy résumé/answers/tracker exports migrate without inferring country-specific eligibility.
+- **Queue** provides individual selection or bounded automatic batches, exclusions, visible scope, stop controls, answer inspection and confirmation history. Only confirmed submissions enter the tracker.
+- **JobRadar Assist 0.3** implements supported Ashby fields, résumé upload, value checks, durable progress, duplicate prevention and explicit attention/uncertain outcomes. It makes no AI calls. A browser restart never blindly retries an interrupted submit.
+- The extension has been verified with synthetic, network-intercepted fixtures. A public Ashby form was inspected read-only. A small authorized live pilot is still required; universal Ashby coverage and production readiness are not claimed. Installation and limits are in [extension/README.md](extension/README.md).
 
-Validation: 38 app tests and 93 pipeline tests; app production build and both TypeScript checks. Browser checks cover saved selections, India accountant results, USA frontend results, empty results, existing navigation and mobile overflow. This is functional validation, not the planned large labeled precision/recall benchmark.
+Validation: **147 unit tests** (41 app, 94 collector, 12 extension), TypeScript checks, app/extension builds, and **13 installed-extension browser scenarios**. App checks cover profile/resume persistence, separate market answers, queue creation, missing-profile gates, desktop/mobile layouts and a clean browser error log. No employer received fixture data.
 
-Current source coverage is uneven. The September 13 run fetched 61,318 jobs from 325/337 boards. Its supported-market output contains 26,475 records (26,468 distinct source job keys): 22,891 USA and 3,584 India. Twelve unavailable boards are disclosed in the feed. Hotel front-desk coverage was empty in this snapshot. This does not measure the wider job market.
+Next release work: an authorized live pilot, the planned 200–300-posting labeled matching benchmark, additional nontechnical coverage where either market is sparse, and reducing the USA feed shard (14.6 MiB), which is too large for the existing browser local-storage cache. The next adapter should follow pilot evidence.
 
-Next: expand coverage for nontechnical occupations, validate matching on a labeled sample, then build one application-site adapter with stored candidate answers, explicit submission scope, duplicate prevention and verifiable submission results.
+Daily refresh and sponsorship schedules remain paused. The legacy account-backed feed remains outside navigation. Supabase, accounts, billing and deployment are unchanged.
 
 ---
 

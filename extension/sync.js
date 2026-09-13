@@ -1,24 +1,10 @@
-// Runs on the JobRadar app origin. Copies the local-first data the user
-// already owns (resume basics, answers, skills) into extension storage so
-// fill.js can use it on application pages. Nothing leaves the browser.
-(function () {
-  function sync() {
-    try {
-      const raw = localStorage.getItem("jobradar.v1");
-      if (!raw) return;
-      const state = JSON.parse(raw);
-      const profile = {
-        basics: state.resume?.basics ?? {},
-        answers: state.answers ?? [],
-        skills: state.resume?.skills ?? [],
-        syncedAt: new Date().toISOString(),
-      };
-      chrome.storage.local.set({ jobradar_profile: profile });
-    } catch (e) {
-      // Malformed state - do nothing rather than break the page.
-    }
-  }
-  sync();
-  window.addEventListener("focus", sync);
-  setInterval(sync, 30000);
-})();
+// Runs only on JobRadar's configured app origins. Page text never issues runner commands.
+window.addEventListener('message', async (event) => {
+  if (event.source !== window || event.origin !== location.origin || event.data?.channel !== 'jobradar-request') return;
+  const { id, action, payload } = event.data;
+  if (typeof id !== 'string' || !['STATUS','RUN','STOP','ERASE'].includes(action)) return;
+  try {
+    const response = await chrome.runtime.sendMessage({ action, payload });
+    window.postMessage({ channel:'jobradar-response', id, ...response }, location.origin);
+  } catch { window.postMessage({ channel:'jobradar-response', id, error:'Reload this page to reconnect JobRadar Assist.' }, location.origin); }
+});

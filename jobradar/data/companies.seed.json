@@ -2521,5 +2521,49 @@
     "token": "kasa",
     "verified": true,
     "note": "discovered 2026-08-27"
+  },
+  {
+    "name": "Accor Hotels",
+    "source": "smartrecruiters",
+    "token": "AccorHotel",
+    "verified": true,
+    "employerType": "product",
+    "note": "Verified 2026-09-13: 6237 postings, 1282 in USA/India. Expanded nontechnical coverage."
+  },
+  {
+    "name": "Westgate Resorts",
+    "source": "smartrecruiters",
+    "token": "WestgateResorts",
+    "verified": true,
+    "employerType": "product",
+    "note": "Verified 2026-09-13: 221 postings, 221 in USA/India. Expanded nontechnical coverage."
+  },
+  {
+    "name": "KIPP Public Schools",
+    "source": "smartrecruiters",
+    "token": "KIPP",
+    "verified": true,
+    "employerType": "product",
+    "note": "Verified 2026-09-13: 480 postings, 480 in USA/India. Expanded nontechnical coverage."
+  },
+  {
+    "name": "School in the Square",
+    "source": "greenhouse",
+    "token": "schoolinthesquare",
+    "verified": true,
+    "employerType": "product",
+    "note": "Verified 2026-09-13: 12 postings, 11 in USA/India. Expanded nontechnical coverage."
+  },
+  {
+    "name": "DaVita",
+    "source": "workday",
+    "token": "davita",
+    "verified": true,
+    "employerType": "product",
+    "params": {
+      "host": "davita.wd1.myworkdayjobs.com",
+      "site": "DKC_External"
+    },
+    "note": "Verified 2026-09-13: 2000 postings, 94 in USA/India. Expanded nontechnical coverage."
   }
 ]

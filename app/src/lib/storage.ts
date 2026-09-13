@@ -1,5 +1,7 @@
 import type { AnswerEntry, AppState, ResumeData, ResumeSettings, SectionKey } from "./types.js";
 import { normalizePreferences } from "../../../shared/search.js";
+import { emptyCandidate, normalizeCandidate, defaultRules, normalizeRules } from "../../../shared/candidate.js";
+import { queueId, type QueueEntry } from "../../../shared/applications.js";
 
 const KEY = "jobradar.v1";
 
@@ -41,7 +43,7 @@ export function defaultAnswers(): AnswerEntry[] {
 }
 
 export function emptyState(): AppState {
-  return { version: 1, resume: emptyResume(), applications: [], answers: defaultAnswers(), search: null };
+  return { version: 1, resume: emptyResume(), applications: [], answers: defaultAnswers(), search: null, candidate: emptyCandidate(), applicationRules: defaultRules(), queue: [] };
 }
 
 /** Merge a parsed object over the empty state so missing fields never crash the UI. */
@@ -62,6 +64,9 @@ export function normalizeState(raw: unknown): AppState {
     applications: Array.isArray(r.applications) ? r.applications : [],
     answers: Array.isArray(r.answers) && r.answers.length > 0 ? r.answers : defaultAnswers(),
     search: normalizePreferences(r.search),
+    candidate: normalizeCandidate(r.candidate),
+    applicationRules: normalizeRules(r.applicationRules),
+    queue: Array.isArray(r.queue) ? [...new Map(r.queue.filter((e): e is QueueEntry => Boolean(e && e.job && typeof e.job.title === "string" && typeof e.job.company === "string" && typeof e.job.location === "string" && Array.isArray(e.roleIds) && queueId(e.job.url) === e.id && ["queued", "inspecting", "ready", "needs_attention", "submitting", "confirmed", "submission_uncertain", "stopped"].includes(e.status))).map(e => [e.id, e])).values()].slice(0, 200) : [],
   };
 }
 

@@ -34,6 +34,7 @@ export const smartrecruiters: SourceAdapter = {
           sourceJobId: p.id,
           title: p.name,
           location: loc,
+          countryCodes: p.location?.country ? [p.location.country] : undefined,
           remote: p.location?.remote ?? null,
           url: `https://jobs.smartrecruiters.com/${company.token}/${p.id}`,
           applyUrl: `https://jobs.smartrecruiters.com/${company.token}/${p.id}`,

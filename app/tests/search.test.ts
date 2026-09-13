@@ -28,6 +28,10 @@ test("nontechnical professions preserve occupation boundaries", () => {
   const examples: [string, string, boolean][] = [
     ["Registered Nurse (RN)", "nurse", true], ["Nurse Practitioner", "nurse", false],
     ["Front Desk Agent", "front-desk", true], ["Medical Front Desk Agent", "front-desk", false],
+    ["Guest Service Associate - Front Office", "front-desk", true], ["Guest Service Associate - FO", "front-desk", true],
+    ["GSA - Front Office", "front-desk", true], ["Front Office Executive", "front-desk", true],
+    ["Guest Service Associate - Food & Beverage", "front-desk", false], ["Guest Service Associate - Housekeeping", "front-desk", false],
+    ["Guest Service Associate - Housekeeping", "housekeeper", true], ["Spa Front Desk & Reservations Agent", "front-desk", false],
     ["Front Desk Manager", "front-desk", false], ["Front Desk Manager", "hotel-manager", true],
     ["Room Attendant", "housekeeper", true], ["Executive Housekeeper", "housekeeper", false],
     ["Math Teacher", "teacher", true], ["Teacher Assistant", "teacher", false],

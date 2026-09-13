@@ -20,3 +20,11 @@ test("mixed supported and unsupported locations never add a third market", () =>
   assert.deepEqual(publicationMarkets("London, UK | Bengaluru, India | Austin, TX"), ["in", "us"]);
   assert.deepEqual(publicationMarkets("Singapore; Germany; Canada"), []);
 });
+
+test("structured country evidence takes precedence over ambiguous city names", () => {
+  assert.deepEqual(publicationMarkets("Panaji, Goa, in", ["in"]), ["in"]);
+  assert.deepEqual(publicationMarkets("Delhi", ["US"]), ["us"]);
+  assert.deepEqual(publicationMarkets("London", ["US"]), ["us"]);
+  assert.deepEqual(publicationMarkets("New Delhi", ["CA"]), []);
+  assert.deepEqual(publicationMarkets("Remote", ["us", "in", "gb"]), ["us", "in"]);
+});

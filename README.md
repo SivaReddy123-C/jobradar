@@ -1,16 +1,20 @@
 # JobRadar — choose your role, find your next job
 
-**Current scope: USA and India.** Choose the roles you want, then see matching listings from the supported company boards. Resume editing, saved answers and an application tracker are included.
+**Current scope: USA and India.** Choose the roles you want, see matching company-board listings, and save the facts and résumé you want employers to receive. The local build includes a queue and the first **Ashby auto-apply adapter**, verified on controlled browser fixtures. A live pilot is still required.
 
-Development resumed September 13, 2026. See [STATUS.md](STATUS.md) for implemented behavior, validation and remaining work. Search uses shared deterministic rules in `shared/search.ts`; it does not require an AI subscription or account.
+See [STATUS.md](STATUS.md) for coverage, validation and remaining work, and [extension/README.md](extension/README.md) to install JobRadar Assist 0.3. Shared deterministic rules power matching and application answers; these flows require no LLM subscription or per-application AI calls.
 
 ### Local development
 
-From `jobradar/`, run `npm ci`, `npm run fetch`, then `npm run feed`. These collect public listings and write local snapshots. From `app/`, run `npm ci` and `npm run dev`. The development server serves the local feed through `/__feed`. Without a refresh, the committed historical snapshot is shown with its date.
+From `jobradar/`, run `npm ci`, `npm run fetch`, then `npm run feed` to refresh public listings. From `app/`, run `npm ci` and `npm run dev`. The development server serves the local feed through `/__feed` at `http://localhost:5174`. The committed snapshot includes its collection date and unavailable-board warning.
 
-Run `npm test` and `npm run typecheck` in both directories; `npm run build` in `app/` checks the production bundle. CI also checks changes to shared matching rules.
+Run `npm test` and `npm run typecheck` in `app/`, `jobradar/` and `extension/`; build the app and extension with `npm run build` in each. The extension also has an installed-browser fixture suite (see its README). CI includes all three packages.
 
-Search preferences and candidate data stay in this browser and can be exported as JSON. Auto-apply is a later milestone. Role and location matching are conservative heuristics, and source coverage varies by profession. An empty result is not evidence that no employers are hiring.
+### Applying
+
+Complete **Profile**, select a saved PDF/DOCX, then use **Add to queue** on matching Ashby jobs. Connect the extension from **Queue** in the same Chrome/Edge browser. Inspect missing answers, select a bounded run, and authorize submission. The runner records confirmation or uncertainty and prevents automatic duplicate attempts. Other application sites remain available through their original links.
+
+Search preferences and candidate data are local. JSON export includes profile facts and file references; download résumé files separately. An authorized application run sends the selected facts/document to the employer. Role/location matching is conservative and source coverage varies by profession. An empty result does not mean no employers are hiring. No production services or schedules were enabled by this build.
 
 ---
 

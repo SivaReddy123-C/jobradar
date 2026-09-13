@@ -10,6 +10,8 @@ export interface Job {
   sourceJobId: string;
   title: string;
   location: string;
+  /** Structured work-location country codes from the source, when supplied. */
+  countryCodes?: string[];
   remote: boolean | null;
   url: string;
   applyUrl: string | null;

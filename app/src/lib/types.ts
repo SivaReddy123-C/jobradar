@@ -104,4 +104,7 @@ export interface AppState {
   applications: Application[];
   answers: AnswerEntry[];
   search: import("../../../shared/search.js").SearchPreferences | null;
+  candidate: import("../../../shared/candidate.js").CandidateProfile;
+  applicationRules: import("../../../shared/candidate.js").ApplicationRules;
+  queue: import("../../../shared/applications.js").QueueEntry[];
 }

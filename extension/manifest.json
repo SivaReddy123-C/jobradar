@@ -1,13 +1,19 @@
 {
   "manifest_version": 3,
   "name": "JobRadar Assist",
-  "version": "0.2.0",
-  "description": "Autofills job application forms from your JobRadar data - automatic on Greenhouse/Lever/Ashby, on-demand on any other site via the popup. You review every field and click Submit yourself - it never submits anything.",
+  "version": "0.3.0",
+  "description": "Applies to selected Ashby jobs using your saved candidate profile. Pauses for missing answers and records confirmation or uncertain outcomes.",
   "permissions": [
     "storage",
-    "activeTab",
     "scripting"
   ],
+  "host_permissions": [
+    "https://jobs.ashbyhq.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_title": "JobRadar Assist"
@@ -15,34 +21,14 @@
   "content_scripts": [
     {
       "matches": [
-        "https://sivareddy123-c.github.io/*"
+        "https://sivareddy123-c.github.io/sivareddy/*",
+        "http://127.0.0.1:5174/*",
+        "http://localhost:5174/*"
       ],
       "js": [
         "sync.js"
       ],
       "run_at": "document_idle"
-    },
-    {
-      "matches": [
-        "https://boards.greenhouse.io/*",
-        "https://job-boards.greenhouse.io/*",
-        "https://*.greenhouse.io/*",
-        "https://jobs.lever.co/*",
-        "https://*.lever.co/*",
-        "https://jobs.ashbyhq.com/*",
-        "https://*.ashbyhq.com/*",
-        "https://*.myworkdayjobs.com/*",
-        "https://jobs.smartrecruiters.com/*",
-        "https://*.smartrecruiters.com/*",
-        "https://apply.workable.com/*",
-        "https://*.workable.com/*",
-        "https://*.recruitee.com/*"
-      ],
-      "js": [
-        "fill.js"
-      ],
-      "run_at": "document_idle",
-      "all_frames": true
     }
   ]
 }

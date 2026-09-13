@@ -362,7 +362,7 @@ async function feed(): Promise<void> {
 
   const entries = latest.jobs
     .flatMap((j) => {
-      const markets = publicationMarkets(j.location);
+      const markets = publicationMarkets(j.location, j.countryCodes);
       return markets.map((country) => ({
         key: j.key,
         company: j.company,

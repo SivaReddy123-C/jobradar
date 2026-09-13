@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { customRole, LEVELS, MARKETS, normalizePreferences, ROLES, WORKPLACES, words, type Market, type RoleChoice, type SearchPreferences } from "../../../shared/search.js";
 
 interface Props { initial: SearchPreferences | null; onSave: (preferences: SearchPreferences) => void; onCancel?: () => void }
 export function SearchSetup({ initial, onSave, onCancel }: Props) {
   const [step, setStep] = useState(1);
+  useEffect(() => { window.scrollTo(0, 0); }, [step]);
   const [query, setQuery] = useState("");
   const [family, setFamily] = useState("");
   const [roles, setRoles] = useState<RoleChoice[]>(initial?.roles ?? []);

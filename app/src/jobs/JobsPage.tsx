@@ -7,11 +7,13 @@ import type { AnswerEntry, Application, ResumeData } from "../lib/types.js";
 import { applyFilters, defaultFilters, loadFeed, readCache, type Feed, type FeedJob, type JobFilters } from "./feed.js";
 import { SponsorBadge } from "./SponsorBadge.js";
 import { SearchSetup } from "./SearchSetup.js";
+import { ashbyUrl, queueId, type QueueEntry, type QueueJob } from "../../../shared/applications.js";
 
 interface Props {
   applications: Application[]; onChange: (apps: Application[]) => void;
   resume: ResumeData; answers: AnswerEntry[];
   preferences: SearchPreferences | null; onPreferencesChange: (preferences: SearchPreferences) => void;
+  queue: QueueEntry[]; onQueue: (job: QueueJob) => void;
 }
 export function JobsPage(props: Props) {
   const [editing, setEditing] = useState(false);
@@ -22,7 +24,7 @@ export function JobsPage(props: Props) {
   return <PersonalizedFeed key={JSON.stringify(props.preferences)} {...props} preferences={props.preferences} onEdit={() => setEditing(true)} />;
 }
 const PAGE = 30;
-function PersonalizedFeed({ applications, onChange, resume, answers, preferences, onEdit }: Props & { preferences: SearchPreferences; onEdit: () => void }) {
+function PersonalizedFeed({ applications, onChange, resume, answers, preferences, onEdit, queue, onQueue }: Props & { preferences: SearchPreferences; onEdit: () => void }) {
   const [feed, setFeed] = useState<Feed | null>(() => readCache(preferences.markets)?.feed ?? null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -99,6 +101,7 @@ function PersonalizedFeed({ applications, onChange, resume, answers, preferences
           <p>Source: {job.source}. Last seen: {(job.lastSeenAt ?? feed?.generatedAt ?? "").slice(0, 10)}.</p>
         </details>
       </div><div className="job-actions"><a className="btn-link primary-link" href={job.url} target="_blank" rel="noreferrer">View & apply ↗</a>
+        {job.source === "ashby" && ashbyUrl(job.url) && <button disabled={queue.some(e => e.id === queueId(job.url)) || applications.some(a => queueId(a.url) === queueId(job.url))} onClick={() => onQueue(job)}>{queue.some(e => e.id === queueId(job.url)) ? "In application queue" : "Add to queue"}</button>}
         <button onClick={() => copyPack(job.key)}>{copiedKey === job.key ? "Copied ✓" : "Copy my answers"}</button>
         {appliedUrls.has(job.url) ? <span className="applied-mark">Logged in tracker ✓</span> : <button onClick={() => logApplied(job)} title="Manually record an application you already submitted">Mark as applied</button>}
       </div></article>)}</div>

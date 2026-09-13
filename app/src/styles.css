@@ -436,6 +436,31 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* Role-first search: shares the existing app shell and resume print styles. */
+.candidate-page { max-width: 1180px; margin: 0 auto; padding: 36px 24px; display: flex; flex-direction: column; gap: 22px; }
+.candidate-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 22px; align-items: start; }
+.profile-section { padding: 24px; }
+.profile-section h2 { font-size: 20px; letter-spacing: -.025em; margin: 0 0 14px; }
+.profile-section h3 { margin-top: 24px; }
+.profile-section .field-grid { gap: 15px; }
+.profile-section .field { min-width: 0; }
+.profile-section .field input, .profile-section .field textarea, .profile-section .field select { width: 100%; }
+.profile-section .card-head { gap: 18px; flex-wrap: wrap; align-items: flex-start; }
+.profile-section textarea { min-height: 76px; resize: vertical; }
+.salary-grid { display: grid; grid-template-columns: 1.3fr 1fr 1fr 1fr; gap: 15px; }
+.document-row { display: flex; flex-direction: column; gap: 9px; padding: 18px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.document-row small, .saved-answer small { color: var(--muted); }
+.document-row button + button { margin-left: 10px; }
+.answer-compose { display: grid; gap: 14px; grid-template-columns: 1fr 2fr 2fr; align-items: start; }
+.answer-compose > button { justify-self: start; }
+.saved-answer { padding: 18px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.saved-answer p { white-space: pre-wrap; line-height: 1.6; }
+.saved-answer button { margin-left: 16px; }
+.run-actions { display: flex; flex-wrap: wrap; align-items: end; gap: 14px; margin-top: 18px; }
+.queue-entry .card-head p { color: var(--muted); }
+.queue-entry details { margin-top: 18px; }
+.topbar nav { flex-wrap: wrap; }
+@media (max-width: 850px) { .candidate-grid { grid-template-columns: 1fr; } .answer-compose { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .candidate-page { padding: 26px 12px; } .profile-section { padding: 18px; } .salary-grid { grid-template-columns: 1fr 1fr; } .topbar nav { width: 100%; border-radius: 12px; } .topbar .tagline { display: none; } }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 button:disabled { opacity: .45; cursor: not-allowed; }
 .eyebrow { color: var(--accent); font-size: 11px; letter-spacing: .14em; font-weight: 750; margin: 0 0 12px; }

@@ -1,26 +1,26 @@
 {
   "generatedAt": "2026-09-13T04:21:13.578Z",
-  "total": 26475,
+  "total": 28563,
   "shards": [
     {
       "country": "us",
-      "jobs": 22891,
-      "bytes": 14495496,
+      "jobs": 24260,
+      "bytes": 15265186,
       "file": "us.json"
     },
     {
       "country": "in",
-      "jobs": 3584,
-      "bytes": 2194498,
+      "jobs": 4303,
+      "bytes": 2582280,
       "file": "in.json"
     }
   ],
   "warnings": [
-    "325 of 337 company boards responded. Listings from 12 unavailable boards are missing from this snapshot."
+    "330 of 342 company boards responded. Listings from 12 unavailable boards are missing from this snapshot."
   ],
   "collection": {
-    "attempted": 337,
-    "succeeded": 325,
+    "attempted": 342,
+    "succeeded": 330,
     "failed": 12
   }
 }

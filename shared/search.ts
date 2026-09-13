@@ -2,7 +2,7 @@
 export const MARKETS = { us: "USA", in: "India" } as const;
 export type Market = keyof typeof MARKETS;
 export const isMarket = (v: unknown): v is Market => v === "us" || v === "in";
-export const ROLE_VERSION = 2;
+export const ROLE_VERSION = 3;
 
 export interface Role { id: string; label: string; family: string; aliases: string[]; exclude?: string[] }
 const role = (id: string, label: string, family: string, aliases: string[], exclude?: string[]): Role =>
@@ -43,9 +43,9 @@ export const ROLES: Role[] = [
   role("hr-generalist", "HR generalist", "Human resources", ["hr generalist", "human resources generalist", "hr executive", "human resources executive"]),
   role("digital-marketer", "Digital marketing specialist", "Marketing", ["digital marketing specialist", "digital marketing executive", "digital marketer", "performance marketing specialist"]),
   role("content-writer", "Content writer", "Marketing", ["content writer", "copywriter", "copy writer"]),
-  role("front-desk", "Hotel front-desk agent", "Hospitality", ["front desk agent", "front office associate", "guest service agent", "guest services agent", "hotel receptionist", "front desk associate"], ["manager", "supervisor", "dental", "medical", "clinic"]),
+  role("front-desk", "Hotel front-desk agent", "Hospitality", ["front desk agent", "front office associate", "guest service agent", "guest services agent", "hotel receptionist", "front desk associate", "front desk clerk", "front office agent", "agent front office", "front office executive", "front office ambassador", "gsa front office", "guest service associate front office", "guest service associate fo"], ["manager", "supervisor", "director", "dental", "medical", "clinic", "spa", "fitness", "bank"]),
   role("hotel-manager", "Hotel manager", "Hospitality", ["hotel manager", "hotel general manager", "front office manager", "front desk manager"]),
-  role("housekeeper", "Housekeeper", "Hospitality", ["housekeeper", "room attendant", "housekeeping attendant"], ["executive", "manager", "supervisor"]),
+  role("housekeeper", "Housekeeper", "Hospitality", ["housekeeper", "room attendant", "housekeeping attendant", "guest service associate housekeeping", "gsa housekeeping"], ["executive", "manager", "supervisor"]),
   role("cook", "Cook / chef", "Hospitality", ["cook", "chef", "commis"], ["chef de projet", "chef de produit"]),
   role("nurse", "Registered nurse", "Healthcare", ["registered nurse", "staff nurse", "rn"], ["nurse practitioner", "nursing assistant", "nurse manager"]),
   role("nurse-practitioner", "Nurse practitioner", "Healthcare", ["nurse practitioner", "advanced practice nurse"]),
