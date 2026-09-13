@@ -3,7 +3,7 @@ name: Deploy app
 on:
   push:
     branches: [main]
-    paths: ["app/**", "shared/**", ".github/workflows/deploy-app.yml"]
+    paths: ["app/**", "shared/**", "jobradar/data/feed/**", ".github/workflows/deploy-app.yml"]
   workflow_dispatch: {}
 
 permissions:

@@ -54,6 +54,14 @@ test("failed refresh preserves old snapshot date and warns about cached country"
   assert.equal(feed.generatedAt, oldDate);
   assert.ok(feed.warnings?.some((w) => w.includes("Could not refresh IN")));
 });
+test("a newly deployed snapshot replaces a recently cached older market shard", async (t) => {
+  const { memory, requests } = fixture(t, { "index.json": index(["in"]), "in.json": shard("in", freshDate, ["new-opening"]) });
+  memory.set("jobradar.shard.v3.in", JSON.stringify({ cachedAt: Date.now(), shard: shard("in", oldDate, ["old-opening"]) }));
+  const feed = await loadFeed(false, ["in"]);
+  assert.deepEqual(requests, ["index.json", "in.json"]);
+  assert.equal(feed.generatedAt, freshDate);
+  assert.deepEqual(feed.jobs.map(j => j.key), ["new-opening"]);
+});
 
 test("multi-market listings are deduplicated and collection warnings survive", async (t) => {
   fixture(t, { "index.json": { ...index(["us", "in"]), warnings: ["One board failed."] }, "us.json": shard("us", freshDate, ["same"]), "in.json": shard("in", freshDate, ["same"]) });

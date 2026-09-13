@@ -1,6 +1,6 @@
 # JobRadar — choose your role, find your next job
 
-**Current scope: USA and India.** Choose the roles you want, see matching company-board listings, and save the facts and résumé you want employers to receive. The local build includes a queue and the first **Ashby auto-apply adapter**, verified on controlled browser fixtures. A live pilot is still required.
+**Current scope: USA and India.** Open the [public JobRadar app](https://sivareddy123-c.github.io/sivareddy/), choose the roles you want, see matching company-board listings, and save the facts and résumé you want employers to receive. The app includes a queue for the first **Ashby auto-apply adapter**, verified on controlled browser fixtures. Install JobRadar Assist to connect the runner; a live pilot is still required.
 
 See [STATUS.md](STATUS.md) for coverage, validation and remaining work, and [extension/README.md](extension/README.md) to install JobRadar Assist 0.3. Shared deterministic rules power matching and application answers; these flows require no LLM subscription or per-application AI calls.
 
@@ -10,13 +10,15 @@ The local preview also has **My jobs → Search more job sites**, a bounded JSea
 
 From `jobradar/`, run `npm ci`, `npm run fetch`, then `npm run feed` to refresh public listings. From `app/`, run `npm ci` and `npm run dev`. The development server serves the local feed through `/__feed` at `http://localhost:5174`. The committed snapshot includes its collection date and unavailable-board warning.
 
+Production builds publish the USA/India feed under `feed/` alongside the app. This keeps the deployed interface and job snapshot together instead of reading a separately cached raw GitHub branch URL. A newer published index invalidates older browser shard data. Pushes to `main` affecting the app, shared code or public feed trigger GitHub Pages deployment. JSearch's key and discovery cache are excluded; its API still runs locally only.
+
 Run `npm test` and `npm run typecheck` in `app/`, `jobradar/` and `extension/`; build the app and extension with `npm run build` in each. The extension also has an installed-browser fixture suite (see its README). CI includes all three packages.
 
 ### Applying
 
 Complete **Profile**, select a saved PDF/DOCX, then use **Add to queue** on matching Ashby jobs. Connect the extension from **Queue** in the same Chrome/Edge browser. Inspect missing answers, select a bounded run, and authorize submission. The runner records confirmation or uncertainty and prevents automatic duplicate attempts. Other application sites remain available through their original links.
 
-Search preferences and candidate data are local. JSON export includes profile facts and file references; download résumé files separately. An authorized application run sends the selected facts/document to the employer. Role/location matching is conservative and source coverage varies by profession. An empty result does not mean no employers are hiring. No production services or schedules were enabled by this build.
+Search preferences and candidate data stay in the browser. JSON export includes profile facts and file references; download résumé files separately. An authorized application run sends the selected facts/document to the employer. Role/location matching is conservative and source coverage varies by profession. An empty result does not mean no employers are hiring. The public site is a static GitHub Pages deployment; background collection schedules remain paused.
 
 ---
 

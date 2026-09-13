@@ -9,6 +9,13 @@ export default defineConfig({
   server: { host: "127.0.0.1", port: 5174, strictPort: true, fs: { deny: [".env", ".env.*", "**/data/jsearch/**", "*.{crt,pem}", "**/.git/**"] } },
   plugins: [react(), {
     name: "local-job-feed",
+    async generateBundle() {
+      // Publish only the public market shards with the app, never local keys or
+      // discovery caches. The site and its feed now come from the same release.
+      for (const file of ["index.json", "us.json", "in.json"]) {
+        this.emitFile({ type: "asset", fileName: `feed/${file}`, source: await readFile(fileURLToPath(new URL(`../jobradar/data/feed/${file}`, import.meta.url))) });
+      }
+    },
     configureServer(server) {
       const discovery = new JSearchService({
         directory: fileURLToPath(new URL("../jobradar/data/jsearch/", import.meta.url)),

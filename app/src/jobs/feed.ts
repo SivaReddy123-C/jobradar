@@ -39,13 +39,13 @@ export interface Feed {
   warnings?: string[];
 }
 
-// Served from GitHub raw (free, CORS-enabled).
+// Production ships the public feed with the app; local development reads the collector.
 //
 // Sharded by country. The single feed reached 24.6 MB, which a browser cannot
 // cache - localStorage caps near 5 MB - so every refresh re-downloaded and
 // re-parsed the whole file and the cache write failed silently every time.
 // That is what "nothing synced and refreshed" looked like from the outside.
-const BASE = import.meta.env?.DEV ? "/__feed" : "https://raw.githubusercontent.com/SivaReddy123-C/sivareddy/main/jobradar/data/feed";
+const BASE = import.meta.env?.DEV ? "/__feed" : `${import.meta.env?.BASE_URL ?? "./"}feed`;
 
 /** Countries fetched when the user has expressed no preference. */
 const DEFAULT_COUNTRIES = ["us", "in"];
@@ -205,7 +205,8 @@ export async function loadFeed(force = false, countries?: string[]): Promise<Fee
   const results = await Promise.all(targets.map(async (c) => {
     if (!force) {
       const hit = readShardCache(c);
-      if (hit) { dates.push(hit.generatedAt); return expand(hit); }
+      // A recent cache write can still contain the preceding deployment's data.
+      if (hit && hit.generatedAt >= index.generatedAt) { dates.push(hit.generatedAt); return expand(hit); }
     }
     try {
       const shard = await getJson<Shard>(`${BASE}/${c}.json`);
