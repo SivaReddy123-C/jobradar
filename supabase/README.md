@@ -9,7 +9,7 @@ Activation on September 13: secret installed, new searches enabled, Auth URL con
 ## Deploy
 
 1. Install dependencies in `jobradar/` and run `npm run build:discovery`. The generated `functions/job-discovery/core.js` is ignored and must be rebuilt before each deployment.
-2. `migrations/20260913071624_hosted_discovery.sql` is already applied to this project. Its filename matches the deployed migration history; do not reapply it. For a fresh project, apply it once. This migration starts new searches **disabled**. Its private `jr_discovery` schema is not exposed to PostgREST. Tables have RLS with no public policies; only the service role has access. Public RPC entry points use SECURITY INVOKER and revoke execution from PUBLIC, anon and authenticated. The remote project's earlier August migrations predate this local Supabase directory; reconcile that baseline before using CLI `db push` rather than marking earlier migrations reverted.
+2. `migrations/20260913071624_hosted_discovery.sql` and `migrations/20260913101337_discovery_pagination.sql` are already applied to this project. Their filenames match deployed migration history; do not reapply them. For a fresh project, apply both once in order. The first migration starts new searches **disabled**. Its private `jr_discovery` schema is not exposed to PostgREST. Tables have RLS with no public policies; only the service role has access. Public RPC entry points use SECURITY INVOKER and revoke execution from PUBLIC, anon and authenticated. The remote project's earlier August migrations predate this local Supabase directory; reconcile that baseline before using CLI `db push` rather than marking earlier migrations reverted.
 3. Sign into the Supabase CLI. Use `supabase secrets set --project-ref udvhqvdydkcqxkdzsdbg --env-file <private-env-file>` with only `OPENWEBNINJA_API_KEY`. Never pass a secret value as a shell argument or commit an env file.
 4. Run `supabase functions deploy job-discovery --project-ref udvhqvdydkcqxkdzsdbg --use-api`. Keep JWT verification enabled. The entry point pins Supabase JS 2.112.4 and uses the platform-provided server secret.
 5. Configure Auth's site URL and allowed redirect URL for `https://sivareddy123-c.github.io/jobradar/`. Keep email confirmation enabled. Verify email delivery before inviting new accounts: Supabase's default mail service has recipient/rate restrictions; custom SMTP is required for general public registration. Existing confirmed accounts can sign in independently of confirmation-email delivery.
@@ -18,7 +18,9 @@ Activation on September 13: secret installed, new searches enabled, Auth URL con
 
 ## Budgets and behavior
 
-- One page per selected country, at most two provider calls per click. No scheduled searches, pagination or automatic retry.
+- One new page per selected country per click, at most two provider calls. Explicit **Fetch more results** follows saved provider cursors, up to five pages per query. No scheduled searches or automatic retry. Existing daily/account caps can stop a search earlier.
+- Cursors remain private. Clients receive opaque page identifiers that the server validates against the saved query chain. Replaying an earlier continuation returns cache without advancing again. Each page uses the same atomic reservation, lease and failure accounting as the first page. Repeated provider cursors terminate the chain. Pages from the earlier cursorless implementation are kept until normal expiry; starting a paginated query needs a fresh first page once.
+- **Search by title** offers the selected role's existing title aliases. The server accepts only those aliases, then applies the same role, country, city and other preference filters. An alternate title has its own shared cache; choose it again to restore its pages. Arbitrary query strings or adjacent roles are rejected.
 - Global limit: 180 requests over a rolling 30 days and 20 per UTC day. Per account: 3 per UTC day. Failures count. These are JobRadar's limits, not the provider's authoritative remaining balance.
 - Durable reservations use a database advisory transaction lock. Concurrent identical requests share a 75-second lease; only one can spend a credit. A failed query has a 10-minute cooldown.
 - Queries share a 24-hour cache across accounts. Cache hits bypass the new-search limits. Restoration reads only matching cached query keys and cannot call the provider. Known posting dates older than 30 days are excluded on every read.
@@ -30,6 +32,8 @@ Activation on September 13: secret installed, new searches enabled, Auth URL con
 ## Checks and operations
 
 `jobradar/tests/hosted-discovery.test.ts` tests the HTTP handler using a fake provider. The SQL regression checks actual privileges, RLS, lease ownership, expiration, cooldown, quotas and access limits. Deployed concurrency verification used two simultaneous reservations and observed one `reserved` and one `busy`, then removed only those fixture records.
+
+`jobradar/tests/discovery-pagination.sql` checks the deployed cursor wrappers as the service role inside a rolled-back transaction; it needs two available global credits but leaves no reservations or fixtures. Browser fixtures now also cover next-page failure/retry, combined main-feed results, restoration of multiple pages and alternate-title selection. See `jobradar/COVERAGE-2026-09-13.md` for the live pagination and employer coverage measurements.
 
 Pause new searches with `update jr_discovery.settings set enabled=false where singleton;`. Cached restoration still works. Never reset the ledger to fix a provider quota error. Changing a secret does not require republishing the public app. Inspect function logs and aggregate request states without logging bearer tokens, provider keys or passwords.
 

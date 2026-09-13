@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { matchJob, normalizePreferences, classifyRoles, ROLE_VERSION, type SearchPreferences, type Market } from "../../shared/search.js";
+import { matchJob, normalizePreferences, classifyRoles, ROLE_VERSION, ROLES, words, type SearchPreferences, type Market } from "../../shared/search.js";
 import { publicationMarkets } from "../../shared/locations.js";
 import { canonicalJobUrl, type DiscoveryJob, type DiscoveryQuery } from "../../shared/discovery.js";
 
@@ -8,12 +8,15 @@ const object = (v: unknown): Record<string, unknown> => v && typeof v === "objec
 const MAX_POSTING_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 function iso(value: unknown): string | null { const s = text(value); return s && Number.isFinite(Date.parse(s)) ? new Date(s).toISOString() : null; }
 
-export function discoveryQueries(raw: unknown, roleId: string): { preferences: SearchPreferences; queries: DiscoveryQuery[] } {
+export function discoveryQueries(raw: unknown, roleId: string, searchTerm?: string): { preferences: SearchPreferences; queries: DiscoveryQuery[] } {
   const preferences = normalizePreferences(raw);
   const role = preferences?.roles.find(r => r.id === roleId);
   if (!preferences || !role) throw new Error("Choose one of your selected roles and USA or India first.");
+  const terms = [role.label, ...(ROLES.find(r => r.id === roleId)?.aliases ?? [])];
+  const term = searchTerm === undefined ? role.label : terms.find(t => words(t) === words(searchTerm));
+  if (!term) throw new Error("Choose a search title belonging to your selected role.");
   const queries = preferences.markets.map(market => ({ roleId: role.id, role: role.label, market,
-    query: `${role.label} jobs in ${preferences.location ? preferences.location + ", " : ""}${market === "us" ? "United States" : "India"}`,
+    query: `${term} jobs in ${preferences.location ? preferences.location + ", " : ""}${market === "us" ? "United States" : "India"}`,
     remote: preferences.workplace === "remote" }));
   return { preferences: { ...preferences, roles: [role] }, queries };
 }
@@ -66,10 +69,11 @@ export function matchingDiscovery(rows: unknown[], query: DiscoveryQuery, prefer
   return jobs.filter(j => matchJob(j, preferences));
 }
 
-export async function fetchJSearch(query: DiscoveryQuery, key: string, fetcher: typeof fetch = fetch): Promise<{ rows: unknown[]; cursor: string }> {
+export async function fetchJSearch(query: DiscoveryQuery, key: string, fetcher: typeof fetch = fetch, cursor = ""): Promise<{ rows: unknown[]; cursor: string }> {
   if (!key.trim()) throw new Error("Add OPENWEBNINJA_API_KEY to jobradar/.env.local first.");
   const url = new URL("https://api.openwebninja.com/jsearch/search-v2");
   url.search = new URLSearchParams({ query: query.query, country: query.market, language: "en", date_posted: "month", num_pages: "1", ...(query.remote ? { work_from_home: "true" } : {}) }).toString();
+  if (cursor) url.searchParams.set("cursor", cursor);
   let response: Response;
   try { response = await fetcher(url, { headers: { "x-api-key": key, accept: "application/json" }, signal: AbortSignal.timeout(25000), redirect: "error" }); }
   catch { throw new Error("JSearch could not be reached within the request limit. No automatic retry was made."); }

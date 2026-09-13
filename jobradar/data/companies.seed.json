@@ -2565,5 +2565,40 @@
       "site": "DKC_External"
     },
     "note": "Verified 2026-09-13: 2000 postings, 94 in USA/India. Expanded nontechnical coverage."
+  },
+  {
+    "name": "Freshworks",
+    "source": "smartrecruiters",
+    "token": "Freshworks",
+    "verified": true,
+    "note": "Public SmartRecruiters posting API verified 2026-09-13; USA/India publication filters apply."
+  },
+  {
+    "name": "SGS",
+    "source": "smartrecruiters",
+    "token": "SGS",
+    "verified": true,
+    "note": "Public SmartRecruiters posting API verified 2026-09-13; USA/India publication filters apply."
+  },
+  {
+    "name": "Eurofins",
+    "source": "smartrecruiters",
+    "token": "Eurofins",
+    "verified": true,
+    "note": "Public SmartRecruiters posting API verified 2026-09-13; USA/India publication filters apply."
+  },
+  {
+    "name": "Sutherland",
+    "source": "smartrecruiters",
+    "token": "Sutherland",
+    "verified": true,
+    "note": "Public SmartRecruiters posting API verified 2026-09-13; USA/India publication filters apply."
+  },
+  {
+    "name": "Dr. Reddy's Laboratories",
+    "source": "smartrecruiters",
+    "token": "DrReddysLaboratoriesLimited",
+    "verified": true,
+    "note": "Public SmartRecruiters posting API verified 2026-09-13; USA/India publication filters apply."
   }
 ]

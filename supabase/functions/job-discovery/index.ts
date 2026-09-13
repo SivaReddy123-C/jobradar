@@ -19,7 +19,7 @@ Deno.serve(hostedDiscoveryHandler({
     access: (user: string) => rpc('jr_discovery_access', { p_user: user }),
     status: (user: string) => rpc('jr_discovery_status', { p_user: user }),
     restore: (keys: string[]) => rpc('jr_discovery_restore', { p_keys: keys }),
-    reserve: (key: string, user: string) => rpc('jr_discovery_reserve', { p_key: key, p_user: user }),
-    finish: (key: string, id: string, rows: unknown[], more: boolean, failed: boolean) => rpc('jr_discovery_finish', { p_key: key, p_id: id, p_rows: rows, p_more: more, p_failed: failed }),
+    reserve: (key: string, user: string) => rpc('jr_discovery_reserve_page', { p_key: key, p_user: user }),
+    finish: (key: string, id: string, rows: unknown[], cursor: string, failed: boolean) => rpc('jr_discovery_finish_page', { p_key: key, p_id: id, p_rows: rows, p_cursor: cursor, p_failed: failed }),
   },
 }));

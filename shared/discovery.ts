@@ -10,7 +10,7 @@ export interface DiscoveryJob extends SearchableJob {
 }
 export interface DiscoveryQuery { roleId: string; role: string; market: Market; query: string; remote: boolean }
 export interface DiscoveryResult {
-  jobs: DiscoveryJob[]; queries: { query: DiscoveryQuery; returned: number; matches: number; cached: boolean; moreAvailable: boolean }[];
+  jobs: DiscoveryJob[]; queries: { query: DiscoveryQuery; returned: number; matches: number; cached: boolean; moreAvailable: boolean; pages?: number; nextPageToken?: string; pageLimitReached?: boolean }[];
   warnings: string[]; requestsUsed: number; localMonthlyRequests: number; generatedAt: string;
 }
 export interface DiscoveryRequest { preferences: SearchPreferences; roleId: string }
