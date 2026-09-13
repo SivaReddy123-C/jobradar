@@ -18,6 +18,7 @@ export function HostedDiscovery(props: DiscoveryPanelProps) {
   async function authenticate() {
     setBusy(true); setError(''); setNotice('');
     try {
+      if (new TextEncoder().encode(password).length > 72) throw new Error('That password is too long. Please use a shorter password.');
       const result = mode === 'signin' ? await supabase().auth.signInWithPassword({ email: email.trim(), password })
         : await supabase().auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: new URL(".", window.location.href).href } });
       if (result.error) throw result.error;

@@ -4,6 +4,8 @@ The static app calls `job-discovery` using a confirmed Supabase Auth session. Th
 
 Project: `udvhqvdydkcqxkdzsdbg` (existing JobRadar project, free plan). The separate EaseDesk project is unrelated.
 
+Activation on September 13: secret installed, new searches enabled, Auth URL configuration updated to `/jobradar/`, and authenticated live checks passed. India accountant: 4/10 matching listings; USA software engineer: 10/10. Two provider credits were spent; the shared ledger reached nine including seven earlier local calls. Browser sign-in, restoration, repeated search, reload and sign-out passed using cached results without further credits. Temporary accounts and their sessions were removed. New-account email delivery is not yet verified for public rollout.
+
 ## Deploy
 
 1. Install dependencies in `jobradar/` and run `npm run build:discovery`. The generated `functions/job-discovery/core.js` is ignored and must be rebuilt before each deployment.

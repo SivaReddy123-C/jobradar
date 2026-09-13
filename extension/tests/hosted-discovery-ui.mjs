@@ -3,13 +3,13 @@ import { chromium } from 'playwright';
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 const errors = []; page.on('pageerror', error => errors.push(error.message));
-let searches = 0, saved = null;
+let searches = 0, saved = null, signups = 0;
 const url = process.env.JOBRADAR_TEST_URL || 'http://localhost:5174';
 const user = { id: '63c5e320-d2b9-4700-a810-35b282a4e721', aud: 'authenticated', role: 'authenticated', email: 'fixture@example.com', email_confirmed_at: new Date().toISOString(), app_metadata: {}, user_metadata: {} };
 const token = [ { alg: 'HS256', typ: 'JWT' }, { sub: user.id, exp: Math.floor(Date.now()/1000)+3600, role: 'authenticated' } ].map(v => Buffer.from(JSON.stringify(v)).toString('base64url')).join('.')+'.fixture';
 await page.route('**/auth/v1/**', async route => {
   const path = new URL(route.request().url()).pathname;
-  if (path.endsWith('/signup')) return route.fulfill({ json: { user, session: null } });
+  if (path.endsWith('/signup')) { signups++; return route.fulfill({ json: { user, session: null } }); }
   if (path.endsWith('/logout')) return route.fulfill({ status: 204 });
   if (path.endsWith('/user')) return route.fulfill({ json: user });
   if (path.endsWith('/token')) return route.fulfill({ json: { access_token: token, token_type: 'bearer', expires_in: 3600, refresh_token: 'fixture-refresh', user } });
@@ -42,6 +42,11 @@ try {
   console.log('PASS: hosted discovery requires sign-in and has no API-key input');
   await page.getByRole('button', { name: 'Create an account', exact: true }).click();
   await page.getByLabel('Email', { exact: true }).fill(user.email);
+  await page.getByLabel('Password', { exact: true }).fill('é'.repeat(40));
+  await page.getByRole('button', { name: 'Create account', exact: true }).click();
+  await page.getByText('That password is too long. Please use a shorter password.').waitFor();
+  assert.equal(signups, 0);
+  console.log('PASS: oversized UTF-8 passwords are rejected before reaching Auth');
   await page.getByLabel('Password', { exact: true }).fill('SyntheticPasswordOnly');
   await page.getByRole('button', { name: 'Create account', exact: true }).click();
   await page.getByText('Check your email to confirm your account', { exact: false }).waitFor();

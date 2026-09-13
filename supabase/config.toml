@@ -1,5 +1,9 @@
 project_id = "jobradar"
 
+[auth]
+site_url = "https://sivareddy123-c.github.io/jobradar/"
+additional_redirect_urls = ["https://sivareddy123-c.github.io/sivareddy/", "https://sivareddy123-c.github.io/jobradar/", "http://localhost:5174/", "http://127.0.0.1:5174/"]
+
 [functions.job-discovery]
 verify_jwt = true
 entrypoint = "./functions/job-discovery/index.ts"
