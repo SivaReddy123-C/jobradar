@@ -17,6 +17,7 @@ export function jsearchHandler(service: JSearchService, saveKey?: (key: unknown)
       const payload = JSON.parse(body) as Record<string, unknown>;
       if (payload.action === "configure" && saveKey) { await saveKey(payload.key); respond(200, await service.status()); return; }
       if (payload.action === "status") { respond(200, await service.status()); return; }
+      if (payload.action === "restore") { respond(200, await service.restore(payload.preferences)); return; }
       if (payload.action !== "search" || typeof payload.roleId !== "string") { respond(400, { error: "Choose a discovery role." }); return; }
       respond(200, await service.search(payload.preferences, payload.roleId));
     } catch (e) { respond(400, { error: e instanceof SyntaxError ? "Invalid request JSON." : (e as Error).message }); }

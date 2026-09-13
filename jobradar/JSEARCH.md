@@ -19,7 +19,7 @@ Additional matching listings are shown with a **Show only additional jobs** chec
 - A normalized role/location/country query is cached on disk for 24 hours. Repeating it, even after restarting the dev server, reuses the cached page. Changing eligibility filters can reuse a page, but reapplies matching locally.
 - Requests are reserved durably before the API call. Failed requests count toward JobRadar's local ceiling: 20 per UTC day and 180 per UTC calendar month.
 - These counters cover this installation only. They are not the provider's remaining allowance, and may have a different reset date. Calls from other software are not included. Provider authentication/rate-limit responses stop the run.
-- Results and counters live under ignored `jobradar/data/jsearch/`. They are denied by the development server and are not added to the committed feed. The app's current discovered list is held in memory; after reload, repeat the search to reuse its cached page.
+- Results and counters live under ignored `jobradar/data/jsearch/`. They are denied by the development server and are not added to the committed feed. Opening My jobs, reloading or opening a new tab automatically restores valid cached pages for the selected roles and countries. Restoring never reads the API key, calls the provider or changes the usage counter. Missing/expired pages remain absent until the user explicitly searches. Matching and the 30-day posting window are reapplied.
 - A process lock prevents concurrent collectors from spending twice. After a crash, verify no collector is running before removing `data/jsearch/request.lock`. Preserve `usage.json` to retain the local budget record.
 
 The UI and API are enabled only by the local Vite development server, bound to loopback on port 5174. The API requires matching Host/Origin and POST. A static production build has no discovery panel, provider credential or discovery endpoint. Account-backed hosting and production credentials are separate work.
@@ -40,7 +40,7 @@ Each command queries one page (or cache) and writes a private `data/jsearch/tria
 
 `npm test` and `npm run typecheck` in `jobradar/` cover query scope, country evidence, expired/invalid records, unknown response schemas, direct-link choice, deduplication, cache reuse, quota reservation, concurrency, origin checks and credential storage. App tests verify that unassessed results do not sort as low risk.
 
-With the local app running and extension dependencies installed, run `npm run test:discovery` in `extension/`. Its browser fixture intercepts every discovery call and verifies key setup, result integration, duplicate suppression, retained results after errors, mobile layout and runtime errors. CI starts the local app for this test. Synthetic keys are never written to the real collector during this test.
+With the local app running and extension dependencies installed, run `npm run test:discovery` in `extension/`. Its seven browser scenarios intercept every discovery call and verify key setup, result integration, duplicate suppression, automatic restoration after reload without another search, retained results after errors, mobile layout and runtime errors. CI starts the local app for this test. Synthetic keys are never written to the real collector during this test.
 
 ## Live trial — September 13, 2026
 

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test, type TestContext } from "node:test";
 import { mkdtemp, mkdir, readFile, writeFile, rm } from "node:fs/promises";
 import { resolve, join, sep } from "node:path";
-import { discoveryQueries, normalizeJSearch, matchingDiscovery, fetchJSearch, parseJSearch } from "../src/jsearch.js";
+import { discoveryQueries, normalizeJSearch, matchingDiscovery, fetchJSearch, parseJSearch, queryKey } from "../src/jsearch.js";
 import { JSearchService, saveJSearchKey, readJSearchKey } from "../src/jsearch-service.js";
 import { trustedLocalRequest } from "../src/jsearch-http.js";
 import { additionalJobs, canonicalJobUrl } from "../../shared/discovery.js";
@@ -58,6 +58,41 @@ test("cached pages reapply the moving freshness window without another provider 
   const next = await service.search(preferences, "accountant");
   assert.equal(next.jobs.length, 0); assert.equal(next.requestsUsed, 0);
   assert.equal(next.queries[0]?.cached, true); assert.equal(calls, 1);
+  assert.equal((await service.restore(preferences)).jobs.length, 0);
+});
+test("automatic restoration combines only selected cached roles and markets without keys or quota changes", async t => {
+  const dir = await directory(t);
+  const selected = { ...preferences, roles: [...preferences.roles, { id: "teacher", label: "Teacher" }], markets: ["in", "us"] };
+  const accountantQuery = discoveryQueries(selected, "accountant").queries.find(q => q.market === "in")!;
+  const teacherQuery = discoveryQueries(selected, "teacher").queries.find(q => q.market === "us")!;
+  const save = (query: typeof accountantQuery, rows: unknown[]) => writeFile(join(dir, queryKey(query) + ".json"), JSON.stringify({ version: 1, at: now.toISOString(), rows, more: false }));
+  await save(accountantQuery, [row(), row({ job_id: "wrong-role", job_title: "Account Executive" }), row({ job_id: "wrong-country", job_country: "US" })]);
+  await save(teacherQuery, [row({ job_id: "teacher", job_title: "Teacher", job_country: "US", job_location: "Austin, TX", job_apply_link: "https://school.example/jobs/1" })]);
+  const ledger = JSON.stringify({ month: "2026-09", used: 180, day: "2026-09-13", daily: 20 });
+  await writeFile(join(dir, "usage.json"), ledger);
+  const service = new JSearchService({ directory: dir, now: () => now,
+    getKey: async () => { throw new Error("Restore must not read credentials"); },
+    fetcher: (async () => { throw new Error("Restore must never request provider data"); }) as typeof fetch });
+  const restored = await service.restore(selected);
+  assert.deepEqual(restored.jobs.map(j => j.title), ["Accountant", "Teacher"]);
+  assert.equal(restored.queries.length, 2); assert.ok(restored.queries.every(q => q.cached));
+  assert.equal(restored.requestsUsed, 0); assert.equal(restored.localMonthlyRequests, 180);
+  assert.equal((await service.restore(preferences)).jobs.length, 1);
+  assert.equal((await service.restore({ ...preferences, level: "senior" })).jobs.length, 0);
+  assert.equal(await readFile(join(dir, "usage.json"), "utf8"), ledger);
+  await assert.rejects(service.restore({ ...preferences, markets: [] }), /Choose your roles/);
+});
+test("missing and expired cache pages never become paid searches during restoration", async t => {
+  const dir = await directory(t);
+  const service = new JSearchService({ directory: dir, now: () => now,
+    getKey: async () => { throw new Error("No credential lookup expected"); },
+    fetcher: (async () => { throw new Error("No provider request expected"); }) as typeof fetch });
+  assert.equal((await service.restore(preferences)).queries.length, 0);
+  const query = discoveryQueries(preferences, "accountant").queries[0]!;
+  await writeFile(join(dir, queryKey(query) + ".json"), JSON.stringify({ version: 1, at: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(), rows: [row()], more: true }));
+  const restored = await service.restore(preferences);
+  assert.equal(restored.jobs.length, 0); assert.equal(restored.queries.length, 0); assert.equal(restored.requestsUsed, 0);
+  await assert.rejects(readFile(join(dir, "usage.json")), { code: "ENOENT" });
 });
 test("matching rejects unrelated titles despite the provider returning them for the query", () => {
   const { preferences: p, queries } = discoveryQueries(preferences, "accountant");

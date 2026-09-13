@@ -2,12 +2,16 @@ import { mkdir, open, readFile, writeFile, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import { additionalJobs, type DiscoveryResult } from "../../shared/discovery.js";
 import { discoveryQueries, fetchJSearch, matchingDiscovery, queryKey } from "./jsearch.js";
+import { normalizePreferences } from "../../shared/search.js";
 
 export const LOCAL_MONTHLY_LIMIT = 180;
 export const LOCAL_DAILY_LIMIT = 20;
 const TTL = 24 * 60 * 60 * 1000;
 interface Ledger { month: string; used: number; day: string; daily: number }
 interface CachedPage { version: 1; at: string; rows: unknown[]; more: boolean }
+function freshPage(page: CachedPage | null, now: Date): page is CachedPage {
+  return Boolean(page?.version === 1 && Array.isArray(page.rows) && Number.isFinite(Date.parse(page.at)) && now.getTime() >= Date.parse(page.at) && now.getTime() - Date.parse(page.at) < TTL);
+}
 
 export async function readJSearchKey(envFile: string): Promise<string> {
   if (process.env.OPENWEBNINJA_API_KEY?.trim()) return process.env.OPENWEBNINJA_API_KEY.trim();
@@ -44,6 +48,24 @@ export class JSearchService {
     const ledger = await this.ledger(this.now());
     return { configured: Boolean(await this.options.getKey()), localMonthlyRequests: ledger.used, localDailyRequests: ledger.daily, monthlyLimit: LOCAL_MONTHLY_LIMIT, dailyLimit: LOCAL_DAILY_LIMIT };
   }
+  /** Restore only existing pages for the selected search. Never call the provider. */
+  async restore(raw: unknown): Promise<DiscoveryResult> {
+    const selected = normalizePreferences(raw);
+    if (!selected) throw new Error("Choose your roles and USA or India first.");
+    const now = this.now(), ledger = await this.ledger(now);
+    const result: DiscoveryResult = { jobs: [], queries: [], warnings: [], requestsUsed: 0, localMonthlyRequests: ledger.used, generatedAt: now.toISOString() };
+    for (const role of selected.roles) {
+      const { preferences, queries } = discoveryQueries(selected, role.id);
+      for (const query of queries) {
+        const page = await json(join(this.options.directory, queryKey(query) + ".json")) as CachedPage | null;
+        if (!freshPage(page, now)) continue;
+        const jobs = matchingDiscovery(page.rows, query, preferences, now).map(j => ({ ...j, firstSeenAt: page.at, lastSeenAt: page.at }));
+        result.jobs.push(...additionalJobs(result.jobs, jobs));
+        result.queries.push({ query, returned: page.rows.length, matches: jobs.length, cached: true, moreAvailable: page.more });
+      }
+    }
+    return result;
+  }
   async search(raw: unknown, roleId: string): Promise<DiscoveryResult> {
     const { preferences, queries } = discoveryQueries(raw, roleId);
     const key = await this.options.getKey();
@@ -59,7 +81,7 @@ export class JSearchService {
       for (const query of queries) {
         const cacheFile = join(this.options.directory, queryKey(query) + ".json");
         const old = await json(cacheFile) as CachedPage | null;
-        const cacheValid = Boolean(old?.version === 1 && Array.isArray(old.rows) && Number.isFinite(Date.parse(old.at)) && now.getTime() >= Date.parse(old.at) && now.getTime() - Date.parse(old.at) < TTL);
+        const cacheValid = freshPage(old, now);
         let page: CachedPage;
         if (cacheValid) page = old!;
         else {
